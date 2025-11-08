@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  # 1. Сервіс Бази Даних (PostgreSQL)
+  db:
+    image: postgres:14-alpine # Легкий образ Postgres
+    container_name: isusa_db # Назва контейнера (як у тебе вже є)
+    environment:
+      # Налаштування для бази даних
+      POSTGRES_DB: isusa_main
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432" # Прокидаємо порт
+    volumes:
+      - pgdata:/var/lib/postgresql/data # Зберігаємо дані
+
+  # 2. Сервіс Твого Додатку (Spring Boot)
+  app:
+    container_name: isusa_app
+    # Кажемо Compose зібрати образ з Dockerfile в поточній папці (.)
+    build: .
+    ports:
+      - "8081:8081" # Прокидаємо порт твого додатка (у тебе 8081)
+    environment:
+      # !!! НАЙВАЖЛИВІША ЧАСТИНА !!!
+      # Ми передаємо налаштування БД в Spring, але host тепер 'db'
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/isusa_main
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SERVER_PORT: 8081
+    depends_on:
+      - db # Вказуємо, що 'app' залежить від 'db'
+
+# Створюємо "volume", щоб дані БД не зникали
+volumes:
+  pgdata:
