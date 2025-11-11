@@ -19,7 +19,6 @@ services:
   app:
     container_name: isusa_app
     # Кажемо Compose зібрати образ з Dockerfile в поточній папці (.)
-    # Оскільки Dockerfile оновлено, буде зібрано новий образ з JDK 21
     build: .
     ports:
       - "8081:8081" # Прокидаємо порт твого додатка (у тебе 8081)
@@ -34,6 +33,19 @@ services:
     depends_on:
       - db # Вказуємо, що 'app' залежить від 'db'
 
+  # 3. React + TypeScript Frontend
+  frontend:
+    build: ./frontend
+    container_name: isusa_frontend
+    ports:
+      - "5173:5173"
+    working_dir: /app
+    command: [ "npm", "run", "dev" ]
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - app
 # Створюємо "volume", щоб дані БД не зникали
 volumes:
   pgdata:
