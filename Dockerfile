@@ -1,5 +1,5 @@
 # --- 1-й Етап: "Будівельник" (Збирає .jar файл) ---
-FROM maven:3.8.5-openjdk-17 AS builder
+FROM maven:3.9.6-eclipse-temurin-21 AS builder
 
 WORKDIR /app
 
@@ -12,8 +12,7 @@ COPY src ./src
 RUN mvn package -DskipTests
 
 # --- 2-й Етап: "Запускач" (Тонкий образ для запуску) ---
-# Використовуємо Eclipse Temurin (заміна OpenJDK)
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
 # Копіюємо лише зібраний .jar файл з 1-го етапу
