@@ -19,7 +19,7 @@ services:
   app:
     container_name: isusa_app
     # Кажемо Compose зібрати образ з Dockerfile в поточній папці (.)
-    build: .
+    build: ./app
     ports:
       - "8081:8081" # Прокидаємо порт твого додатка (у тебе 8081)
     environment:
