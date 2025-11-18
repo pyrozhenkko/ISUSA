@@ -5,18 +5,22 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * "Безпечний" DTO для представлення User.
+ * НЕ містить хеш паролю.
+ */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserResponseDto {
     private Integer userId;
-    private Integer roleId;
-    private String roleName;
     private String username;
     private String fullName;
     private String email;
-    private Boolean isActive;
+    private String roleName; // "Сплющені" дані
+    private Integer studentId; // Може бути null
 
-    private Integer studentId;
+    private Object authorities; // або Collection<String>, якщо плануєш їх передавати
+
 }

@@ -20,7 +20,7 @@ public class StudentRegistrationRequestDto {
     private String fullName;
     private String email;
 
-    private String studentId; // Student ID (білет)
+    private Integer studentId; // Student ID (білет)
     private String groupId;
     private String specialty;
     private String faculty;

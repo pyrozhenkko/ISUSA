@@ -6,6 +6,7 @@ import org.mapstruct.Mapper;
 
 import java.util.List;
 
+
 @Mapper(componentModel = "spring")
 public interface ApplicationTypeMapper {
     ApplicationTypeResponseDto toResponseDto(ApplicationType entity);

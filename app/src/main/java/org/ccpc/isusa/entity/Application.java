@@ -36,23 +36,47 @@ public class Application {
     @Column(name = "Title", length = 250, nullable = false)
     private String title;
 
-    @Lob // Для типу TEXT
+    @Lob // Тип TEXT
     @Column(name = "Content", nullable = false)
     private String content;
 
-    @CreationTimestamp // Відповідає DEFAULT NOW()
+    @CreationTimestamp
     @Column(name = "CreatedDate", updatable = false)
     private LocalDateTime createdDate;
 
-    @UpdateTimestamp // Оновлюється при зміні сутності
+    @UpdateTimestamp
     @Column(name = "UpdatedDate")
     private LocalDateTime updatedDate;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ProcessedByUserID") // Nullable
+    @JoinColumn(name = "ProcessedByUserID")
     private User processedByUser;
 
-    // Зворотні зв'язки з каскадним видаленням
+    // === НОВІ ПОЛЯ ДЛЯ ПІДПИСУ ===
+
+    /**
+     * "Відбиток" заявки (SHA-256 від контенту),
+     * який використовувався для генерації dataHash.
+     */
+    @Column(name = "ContentHash", length = 64)
+    private String contentHash;
+
+    /**
+     * Дані, які були підписані (StudentId + ContentHash + Timestamp + Nonce)
+     * Зберігаються для майбутньої перевірки.
+     */
+    @Lob
+    @Column(name = "DataToSign")
+    private String dataToSign;
+
+    /**
+     * Сам асиметричний підпис (RSA) для dataToSign,
+     * збережений у форматі Base64.
+     */
+    @Lob
+    @Column(name = "Signature")
+    private String signature;
+
     @OneToMany(mappedBy = "application", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Attachment> attachments;
 

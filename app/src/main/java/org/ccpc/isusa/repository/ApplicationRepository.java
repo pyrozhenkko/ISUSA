@@ -20,5 +20,10 @@ public interface ApplicationRepository extends JpaRepository<Application, Intege
     @Query("SELECT a FROM Application a WHERE a.student.studentId = :studentId AND a.applicationStatus.statusId = :statusId")
     List<Application> findByStudentAndStatus(@Param("studentId") Integer studentId,
                                              @Param("statusId") Integer statusId);
+    List<Application> findByStudent(Student student);
+
+    Optional<Application> findByApplicationIdAndStudent(Integer applicationId, Student student);
+
+
 }
 
