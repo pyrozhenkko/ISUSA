@@ -3,6 +3,7 @@ package org.ccpc.isusa.controller;
 import jakarta.validation.Valid;
 import org.ccpc.isusa.dto.request.UserCreateRequestDto;
 import org.ccpc.isusa.dto.response.UserResponseDto;
+import org.ccpc.isusa.service.AdminService;
 import org.ccpc.isusa.service.AuthService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,7 +21,8 @@ import lombok.RequiredArgsConstructor;
 @PreAuthorize("hasRole('ADMIN')") // Захист на рівні всього класу
 public class AdminController {
 
-    private final AuthService authService;
+    private final AdminService adminService;
+
     // (Тут також будуть інші сервіси, напр. UserService,
     // коли ти реалізуєш логіку блокування/видалення юзерів)
 
@@ -30,6 +32,6 @@ public class AdminController {
      */
     @PostMapping("/users/create")
     public ResponseEntity<UserResponseDto> createUser(@Valid @RequestBody UserCreateRequestDto request) {
-        return ResponseEntity.ok(authService.createUser(request));
+        return ResponseEntity.ok(adminService.createUser(request));
     }
 }

@@ -123,37 +123,5 @@ public class AuthService {
         return new LoginResponseDto(jwtToken, userMapper.toResponseDto(user));
     }
 
-    /**
-     * Створення нового користувача (співробітника) Адміністратором.
-     */
-    @Transactional
-    public UserResponseDto createUser(UserCreateRequestDto request) {
-        // 1. Валідація
-        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
-            throw new RegistrationException("Користувач з таким логіном вже існує");
-        }
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            throw new RegistrationException("Користувач з такою поштою вже існує");
-        }
 
-        // 2. Знаходимо Роль
-        Role role = roleRepository.findByRoleName(request.getRoleName())
-                .orElseThrow(() -> new RegistrationException(
-                        "Роль '" + request.getRoleName() + "' не знайдена."));
-
-        // 3. Створюємо User
-        User user = new User();
-        user.setUsername(request.getUsername());
-        user.setFullName(request.getFullName());
-        user.setEmail(request.getEmail());
-        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-        user.setIsActive(true);
-        user.setRole(role);
-
-        // 4. Зберігаємо User
-        User savedUser = userRepository.save(user);
-
-        // 5. Повертаємо DTO (без токену, бо ми не логінимо цього юзера)
-        return userMapper.toResponseDto(savedUser);
-    }
 }
