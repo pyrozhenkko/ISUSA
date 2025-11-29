@@ -1,10 +1,15 @@
 package org.ccpc.isusa.dto.response;
 
+import org.ccpc.isusa.dto.response.UserResponseDto;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Відповідь, що надсилається після успішного входу або реєстрації.
+ * Містить токен та дані про користувача.
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -12,7 +17,7 @@ import lombok.NoArgsConstructor;
 public class LoginResponseDto {
 
     /**
-     * JWT (або інший) токен доступу.
+     * JWT
      */
     private String token;
 
