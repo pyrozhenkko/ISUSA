@@ -1,6 +1,7 @@
 package org.ccpc.isusa.repository;
 
 import org.ccpc.isusa.entity.Student;
+import org.ccpc.isusa.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -17,4 +18,6 @@ public interface StudentRepository extends JpaRepository<Student, Integer> {
     List<Student> findBySpecialty(String specialty);
 
     List<Student> findByGroupId(String groupId);
+    Optional<Student> findByUser(User user);
+
 }
