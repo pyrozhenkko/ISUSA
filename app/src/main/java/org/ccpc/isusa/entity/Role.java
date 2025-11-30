@@ -7,6 +7,7 @@ import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
 
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "Roles")
@@ -23,16 +24,25 @@ public class Role implements GrantedAuthority {
     @Column(name = "RoleName", length = 50, nullable = false, unique = true)
     private String roleName;
 
+    // === НОВИЙ ЗВ'ЯЗОК ДЛЯ ПРАВ ДОСТУПУ (RBAC) ===
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+            name = "RolePermissions", // Проміжна таблиця
+            joinColumns = @JoinColumn(name = "RoleID"),
+            inverseJoinColumns = @JoinColumn(name = "PermissionID")
+    )
+    private Set<Permission> permissions;
+
+    // --- Зв'язки з іншими таблицями (без змін) ---
     @OneToMany(mappedBy = "role", fetch = FetchType.LAZY)
     private Set<User> users;
 
-    // === GrantedAuthority ===
-
+    // === РЕАЛІЗАЦІЯ GrantedAuthority ===
     @Override
     public String getAuthority() {
-        // Spring Security очікує, що назва ролі буде
-        // у форматі "ROLE_ADMIN", "ROLE_STUDENT"
-        // (Це стандарт, який можна налаштувати, але так простіше)
-        return "ROLE_" + this.roleName;
+        // У моделі RBAC, 'Authority' - це самостійне право, а не назва ролі.
+        // Ми повертаємо лише назву ролі, щоб спростити логіку.
+        // Основні права (Permissions) повертаються через User.getAuthorities().
+        return this.roleName;
     }
 }
