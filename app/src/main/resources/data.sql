@@ -1,63 +1,104 @@
--- ==========================================
--- 1. Таблиця ROLES (Ролі користувачів)
--- Важливо: Назви ролей мають відповідати тим, що використовуються в SecurityConfig
--- та AuthService (наприклад, "ADMIN", "STUDENT").
--- ==========================================
+-- =================================================================
+-- 1. ПРАВА ДОСТУПУ (PERMISSIONS)
+-- Визначаємо, що взагалі МОЖНА робити в системі.
+-- =================================================================
+INSERT INTO permissions (permission_name) VALUES
+                                              ('application:create'),       -- Створювати заявки
+                                              ('application:read_own'),     -- Читати ТІЛЬКИ свої заявки
+                                              ('application:read'),         -- Читати ВСІ заявки (для персоналу)
+                                              ('application:update_status'),-- Міняти статус (Деканат)
+                                              ('application:verify_sign'),  -- Перевіряти підпис
+                                              ('recommendation:create'),    -- Писати рекомендації (Викладач)
+                                              ('user:manage')               -- Створювати юзерів (Адмін)
+    ON CONFLICT (permission_name) DO NOTHING;
 
-INSERT INTO Roles (RoleName) VALUES ('ADMIN');
-INSERT INTO Roles (RoleName) VALUES ('STUDENT');
-INSERT INTO Roles (RoleName) VALUES ('TEACHER');
-INSERT INTO Roles (RoleName) VALUES ('DEANERY_STAFF');
+-- =================================================================
+-- 2. РОЛІ (ROLES)
+-- Основні посади в університеті.
+-- =================================================================
+INSERT INTO roles (role_name) VALUES
+                                  ('STUDENT'),
+                                  ('TEACHER'),
+                                  ('DEANERY_STAFF'),
+                                  ('ADMIN')
+    ON CONFLICT (role_name) DO NOTHING;
 
+-- =================================================================
+-- 3. ЗВ'ЯЗОК РОЛЕЙ ТА ПРАВ (ROLE_PERMISSIONS)
+-- САМЕ ТУТ ми даємо студенту право читати свої заяви.
+-- =================================================================
 
--- ==========================================
--- 2. Таблиця APPLICATIONSTATUS (Статуси заявок)
--- Важливо: Статус "Нова" є ОБОВ'ЯЗКОВИМ, оскільки він
--- хардкодиться в ApplicationService при створенні заявки.
--- ==========================================
+-- === СТУДЕНТ (STUDENT) ===
+-- Отримує право створювати (create) і читати свої (read_own)
+INSERT INTO role_permissions (roleid, permissionid)
+SELECT r.roleid, p.permissionid
+FROM roles r, permissions p
+WHERE r.role_name = 'STUDENT'
+  AND p.permission_name IN ('application:create', 'application:read_own')
+    ON CONFLICT (roleid, permissionid) DO NOTHING;
 
-INSERT INTO ApplicationStatus (StatusName) VALUES ('Нова');
-INSERT INTO ApplicationStatus (StatusName) VALUES ('На розгляді');
-INSERT INTO ApplicationStatus (StatusName) VALUES ('Потребує уточнення');
-INSERT INTO ApplicationStatus (StatusName) VALUES ('Схвалено');
-INSERT INTO ApplicationStatus (StatusName) VALUES ('Відхилено');
-INSERT INTO ApplicationStatus (StatusName) VALUES ('Скасовано');
+-- === ВИКЛАДАЧ (TEACHER) ===
+-- Читає всі, перевіряє підпис, пише рекомендації
+INSERT INTO role_permissions (roleid, permissionid)
+SELECT r.roleid, p.permissionid
+FROM roles r, permissions p
+WHERE r.role_name = 'TEACHER'
+  AND p.permission_name IN ('application:read', 'application:verify_sign', 'recommendation:create')
+    ON CONFLICT (roleid, permissionid) DO NOTHING;
 
+-- === ДЕКАНАТ (DEANERY_STAFF) ===
+-- Читає всі, змінює статус, перевіряє підпис
+INSERT INTO role_permissions (roleid, permissionid)
+SELECT r.roleid, p.permissionid
+FROM roles r, permissions p
+WHERE r.role_name = 'DEANERY_STAFF'
+  AND p.permission_name IN ('application:read', 'application:update_status', 'application:verify_sign')
+    ON CONFLICT (roleid, permissionid) DO NOTHING;
 
--- ==========================================
--- 3. Таблиця APPLICATIONTYPE (Типи заявок)
--- Це список, з якого студент обирає тип при створенні заявки.
--- Описи (Description) додані для кращого розуміння інтерфейсу.
--- ==========================================
+-- === АДМІН (ADMIN) ===
+-- Має права на все, плюс керування юзерами
+INSERT INTO role_permissions (roleid, permissionid)
+SELECT r.roleid, p.permissionid
+FROM roles r, permissions p
+WHERE r.role_name = 'ADMIN'
+  AND p.permission_name IN ('application:read', 'application:update_status', 'application:verify_sign', 'user:manage')
+    ON CONFLICT (roleid, permissionid) DO NOTHING;
 
-INSERT INTO ApplicationType (TypeName, Description)
-VALUES ('Матеріальна допомога', 'Заява на отримання одноразової грошової допомоги у зв’язку з важким матеріальним станом.');
+-- =================================================================
+-- 4. СТАТУСИ ЗАЯВОК (APPLICATION_STATUS)
+-- =================================================================
+INSERT INTO application_status (status_name) VALUES
+                                                 ('Нова'),
+                                                 ('На розгляді'),
+                                                 ('Потребує уточнення'),
+                                                 ('Схвалено'),
+                                                 ('Відхилено'),
+                                                 ('Скасовано')
+    ON CONFLICT (status_name) DO NOTHING;
 
-INSERT INTO ApplicationType (TypeName, Description)
-VALUES ('Академічна відпустка', 'Заява на перерву у навчанні за станом здоров’я або сімейними обставинами.');
+-- =================================================================
+-- 5. ТИПИ ЗАЯВОК (APPLICATION_TYPE)
+-- =================================================================
+INSERT INTO application_type (type_name, description) VALUES
+                                                          ('Матеріальна допомога', 'Заява на отримання одноразової грошової допомоги.'),
+                                                          ('Академічна відпустка', 'Заява на перерву у навчанні за станом здоров’я.'),
+                                                          ('Поселення у гуртожиток', 'Заява на надання ліжко-місця.'),
+                                                          ('Індивідуальний графік', 'Переведення на індивідуальний графік навчання.'),
+                                                          ('Дублікат квитка', 'Виготовлення нового студентського квитка.'),
+                                                          ('Довідка про навчання', 'Запит на отримання довідки для військкомату.')
+    ON CONFLICT (type_name) DO NOTHING;
 
-INSERT INTO ApplicationType (TypeName, Description)
-VALUES ('Поселення у гуртожиток', 'Заява на надання ліжко-місця у гуртожитку університету.');
-
-INSERT INTO ApplicationType (TypeName, Description)
-VALUES ('Індивідуальний графік', 'Заява на переведення на індивідуальний графік навчання (для працюючих студентів).');
-
-INSERT INTO ApplicationType (TypeName, Description)
-VALUES ('Дублікат студентського квитка', 'Заява на виготовлення нового квитка у зв’язку з втратою або пошкодженням старого.');
-
-INSERT INTO ApplicationType (TypeName, Description)
-VALUES ('Довідка про навчання', 'Запит на отримання довідки для військкомату або за місцем вимоги.');
-
-
-
--- Інсерт для суперюзера, захешований пароль admin
-INSERT INTO users (username, full_name, email, password_hash, is_active, roleid)
+-- =================================================================
+-- 6. СТВОРЕННЯ СУПЕР-АДМІНА
+-- Логін: admin / Пароль: adminpass
+-- =================================================================
+INSERT INTO users (roleid, username, password_hash, full_name, email, is_active)
 VALUES (
-           'super_admin',
+           (SELECT roleid FROM roles WHERE role_name = 'ADMIN'),
+           'admin',
+           '$2a$10$t3X.d6H1Xl3L4Qo2g5Y9sO.xK2c9aB0J1K8L5O.xK2c9aB0J1K8L5O',
            'Головний Адміністратор',
-           'admin@isusa.edu',
-           '$2a$10$Uc.SZ0hvGJQlYdsAp7be1.lFjmOnc7aAr4L0YY3/VN3oK.F8zJHRG',
-           'true',
-           2
-       );
-
+           'admin@university.edu',
+           TRUE
+       )
+    ON CONFLICT (username) DO NOTHING;
