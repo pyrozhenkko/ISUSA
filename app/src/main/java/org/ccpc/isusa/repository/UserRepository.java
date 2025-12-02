@@ -1,5 +1,6 @@
 package org.ccpc.isusa.repository;
 
+import org.ccpc.isusa.entity.Role;
 import org.ccpc.isusa.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -23,4 +24,6 @@ public interface UserRepository extends JpaRepository<User, Integer> {
     boolean existsByEmail(String email);
 
     boolean existsByStudentStudentId(Integer studentId);
+
+    List<User> findByRole(Role role);
 }
