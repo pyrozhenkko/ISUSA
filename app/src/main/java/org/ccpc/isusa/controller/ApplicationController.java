@@ -2,6 +2,7 @@ package org.ccpc.isusa.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.ccpc.isusa.dto.request.ApplicationSignRequestDto;
+import org.ccpc.isusa.dto.request.ApplicationStatusUpdateDto; // Тепер цей імпорт працюватиме
 import org.ccpc.isusa.dto.response.ApplicationResponseDto;
 import org.ccpc.isusa.dto.response.ApplicationVerificationResponseDto;
 import org.ccpc.isusa.entity.User;
@@ -9,6 +10,7 @@ import org.ccpc.isusa.service.ApplicationService;
 import org.ccpc.isusa.service.VerificationService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,6 +40,7 @@ public class ApplicationController {
     public ResponseEntity<List<ApplicationResponseDto>> getMyApplications(
             @AuthenticationPrincipal User currentUser
     ) {
+        // Це ПРАВИЛЬНИЙ метод. Він бере юзера з токена і передає в сервіс.
         return ResponseEntity.ok(applicationService.getMyApplications(currentUser));
     }
 
@@ -62,6 +65,16 @@ public class ApplicationController {
     @PreAuthorize("hasAuthority('application:read')")
     public ResponseEntity<ApplicationResponseDto> getApplicationById(@PathVariable Integer id) {
         return ResponseEntity.ok(applicationService.getApplicationDetailsAsStaff(id));
+    }
+
+    @PutMapping("/{id}/status")
+    @PreAuthorize("hasAuthority('application:update_status')")
+    public ResponseEntity<ApplicationResponseDto> updateStatus(
+            @PathVariable Integer id,
+            @RequestBody ApplicationStatusUpdateDto dto,
+            @AuthenticationPrincipal User currentUser
+    ) {
+        return ResponseEntity.ok(applicationService.updateApplicationStatus(id, dto, currentUser));
     }
 
     @GetMapping("/{id}/verify")
