@@ -31,8 +31,6 @@ interface MyApplication {
   rejectionReason?: string;
 }
 
-const [selectedFile, setSelectedFile] = useState<File | null>(null);
-
 const getStatusIcon = (status: string) => {
   switch(status) {
     case 'pending':
@@ -192,6 +190,9 @@ const StudentPortal: React.FC<StudentPortalProps> = ({ handleLogout, userRole, u
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+
+    
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const studentInfo = {
     name: 'Іванов Іван Петрович',
     group: 'КН-301',

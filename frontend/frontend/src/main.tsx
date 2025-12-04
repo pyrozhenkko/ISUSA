@@ -37,19 +37,21 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ element, isAuthenticate
 
 
 const App = () => {
+    const IS_TESTING_MODE = false; 
+
     const initialToken = localStorage.getItem('authToken');
     const initialRole = localStorage.getItem('userRole') as UserRole | null;
     const initialUserDataString = localStorage.getItem('userData');
     
-    const isAuthenticated = !!initialToken && !!initialRole;
+    const isAuthenticated = IS_TESTING_MODE || (!!initialToken && !!initialRole);
     
     const [authState, setAuthState] = useState<AuthState>({
         isAuthenticated: isAuthenticated, 
         token: initialToken,
-        userRole: initialRole,
+        userRole: isAuthenticated ? (initialRole || 'STUDENT') : null,
         userData: initialUserDataString ? JSON.parse(initialUserDataString) : null,
     });
-  
+ 
     const handleLogin = (token: string, userData: any) => {
         const role = userData?.roleName as UserRole;
         
