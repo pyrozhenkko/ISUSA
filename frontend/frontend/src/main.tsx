@@ -11,11 +11,11 @@ import './index.css';
 
 import StudentPortal from './main-page.tsx';
 import InfoPage from './info.tsx'; 
-import LoginPage from './login.tsx';
+import AuthPage from './login.tsx';
+import EditApplicationPage from './edit.tsx'
 
 type UserRole = 'STUDENT' | 'LECTURER' | 'ADMIN'; 
 
-// Структура глобального стану автентифікації
 interface AuthState {
     isAuthenticated: boolean;
     token: string | null;
@@ -29,7 +29,6 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ element, isAuthenticated }) => {
-    // Якщо користувач не авторизований, перенаправляємо на сторінку входу
     if (!isAuthenticated) {
         return <Navigate to="/login" replace />;
     }
@@ -38,12 +37,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ element, isAuthenticate
 
 
 const App = () => {
-    // 1. ІНІЦІАЛІЗАЦІЯ СТАНУ З Local Storage (для збереження сесії)
     const initialToken = localStorage.getItem('authToken');
     const initialRole = localStorage.getItem('userRole') as UserRole | null;
     const initialUserDataString = localStorage.getItem('userData');
     
-    // Перевіряємо, чи є токен І роль для вважання користувача авторизованим
     const isAuthenticated = !!initialToken && !!initialRole;
     
     const [authState, setAuthState] = useState<AuthState>({
@@ -52,9 +49,7 @@ const App = () => {
         userRole: initialRole,
         userData: initialUserDataString ? JSON.parse(initialUserDataString) : null,
     });
-    
-    // 2. ФУНКЦІЯ ВХОДУ (викликається з LoginPage)
-    // data.token та data.user приходять з LoginResponseDto
+  
     const handleLogin = (token: string, userData: any) => {
         const role = userData?.roleName as UserRole;
         
@@ -63,12 +58,10 @@ const App = () => {
             return;
         }
 
-        // Зберігаємо дані в Local Storage
         localStorage.setItem('authToken', token);
         localStorage.setItem('userRole', role);
         localStorage.setItem('userData', JSON.stringify(userData));
 
-        // Оновлюємо стан
         setAuthState({
             isAuthenticated: true,
             token: token,
@@ -77,14 +70,11 @@ const App = () => {
         });
     };
     
-    // 3. ФУНКЦІЯ ВИХОДУ
     const handleLogout = () => {
-        // Очищаємо Local Storage
         localStorage.removeItem('authToken');
         localStorage.removeItem('userRole');
         localStorage.removeItem('userData');
         
-        // Оновлюємо стан
         setAuthState({
             isAuthenticated: false,
             token: null,
@@ -97,42 +87,38 @@ const App = () => {
         <BrowserRouter>
             <Routes>
                 
-                {/* 1. ГОЛОВНА / ПУБЛІЧНА СТОРІНКА */}
                 <Route 
                     path="/" 
-                    // Передаємо лише стан авторизації у InfoPage
                     element={<InfoPage isAuthenticated={authState.isAuthenticated} />} 
                 />
                 
-                {/* 2. МАРШРУТ ВХОДУ (/login) */}
                 <Route 
                     path="/login" 
                     element={
-                        // Якщо вже авторизований -> перенаправляємо в кабінет
                         authState.isAuthenticated 
                             ? <Navigate to="/account" replace /> 
-                            // Інакше показуємо сторінку входу
-                            : <LoginPage handleLogin={handleLogin} /> 
+                            : <AuthPage handleLogin={handleLogin} /> 
                     } 
                 />
 
-                {/* 3. МАРШРУТ ОСОБИСТОГО КАБІНЕТУ (/account) - ЗАХИЩЕНИЙ */}
                 <Route 
                     path="/account" 
                     element={
                         <ProtectedRoute 
-                            // Передаємо handleLogout та дані для StudentPortal
                             element={<StudentPortal 
                                 handleLogout={handleLogout} 
                                 userRole={authState.userRole}
-                                userId={authState.userData?.userId} // Використовуємо userId з userData
+                                userId={authState.userData?.userId}
                             />} 
                             isAuthenticated={authState.isAuthenticated} 
                         />
                     } 
                 />
 
-                {/* 4. Маршрут 404 */}
+                <Route path="/:documentId/edit" element={<EditApplicationPage />
+
+                } />
+
                 <Route path="*" element={
                     <div className="text-center p-10">
                         <h1 className="text-3xl font-bold">404</h1>

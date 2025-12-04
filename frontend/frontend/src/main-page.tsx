@@ -1,27 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Clock, CheckCircle, XCircle, Plus, User, BookOpen, Calendar, MessageSquare, Download, Eye, LogOut, Loader, AlertTriangle, Edit3, Trash2 } from 'lucide-react';
 
-// ===========================================
-// КОНФІГУРАЦІЯ
-// ===========================================
 type UserRole = 'STUDENT' | 'LECTURER' | 'ADMIN';
 const API_BASE_URL = 'http://localhost:8080/api/applications'; 
 
-// ⚠️ Карта типів заявки (ПРИПУЩЕННЯ: має відповідати TypeId у базі)
 const APPLICATION_TYPE_MAP: { [key: string]: number } = {
     'Довідка про навчання': 1,
     'Академічна відпустка': 2,
     'Переведення на бюджет': 3,
-    'Перенесення сесії': 4,
+    'Перенесення сесії': 4, 
     'Відрахування за власним бажанням': 5,
     'Поновлення на навчання': 6,
     'Довідка-виклик': 7,
     'Матеріальна допомога': 8
 };
-
-// ===========================================
-// ІНТЕРФЕЙСИ
-// ===========================================
 
 interface StudentPortalProps {
     handleLogout: () => void;
@@ -29,20 +21,17 @@ interface StudentPortalProps {
     userId: number | null;
 }
 
-// Адаптований інтерфейс для відображення
 interface MyApplication {
   id: number;
-  studentName?: string; // Для викладача
+  studentName?: string;
   type: string;
   date: string;
-  status: 'pending' | 'approved' | 'rejected' | 'in-review' | 'нова'; // Додано 'нова' з бекенду
+  status: 'pending' | 'approved' | 'rejected' | 'in-review' | 'нова';
   comment?: string;
-  rejectionReason?: string; // З ApplicationResponseDto
+  rejectionReason?: string;
 }
 
-// ===========================================
-// ДОПОМІЖНІ ФУНКЦІЇ (Не змінюються)
-// ===========================================
+const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
 const getStatusIcon = (status: string) => {
   switch(status) {
@@ -77,15 +66,11 @@ const getStatusColor = (status: string) => {
   return colorMap[status as keyof typeof colorMap] || 'border-slate-200 bg-white';
 };
 
-// ===========================================
-// КОМПОНЕНТ ДЛЯ ВИКЛАДАЧА (LecturerView)
-// ===========================================
 const LecturerView: React.FC<StudentPortalProps> = ({ handleLogout, userRole, userId }) => {
     const [applications, setApplications] = useState<MyApplication[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Завантаження ВСІХ заявок
     useEffect(() => {
         const fetchAllApplications = async () => {
             if (userRole !== 'LECTURER' && userRole !== 'ADMIN') return;
@@ -93,7 +78,6 @@ const LecturerView: React.FC<StudentPortalProps> = ({ handleLogout, userRole, us
             
             try {
                 setLoading(true);
-                // Ендпоінт для викладача/адміна
                 const response = await fetch(`${API_BASE_URL}/all`, { 
                     method: 'GET',
                     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -106,7 +90,7 @@ const LecturerView: React.FC<StudentPortalProps> = ({ handleLogout, userRole, us
                         type: app.applicationType?.typeName || 'Незн. тип',
                         date: app.createdDate.split('T')[0],
                         status: app.applicationStatus?.statusName?.toLowerCase() || 'pending',
-                        studentName: app.student?.fullName || app.student?.username, // Ім'я студента
+                        studentName: app.student?.fullName || app.student?.username, 
                         comment: app.content, 
                         rejectionReason: app.rejectionReason,
                     }));
@@ -126,14 +110,14 @@ const LecturerView: React.FC<StudentPortalProps> = ({ handleLogout, userRole, us
     }, [userRole, userId]);
 
     const handleConfirm = (id: number) => {
-        // ⚠️ Тут буде реальний PUT-запит на /api/applications/{id}/confirm
+        //Тут буде реальний PUT-запит на /api/applications/{id}/confirm
         alert(`Підтвердити заявку #${id}. (PUT /confirm)`);
     };
 
     const handleReject = (id: number) => {
         const reason = prompt(`Введіть причину відхилення заявки #${id}:`);
         if (reason) {
-            // ⚠️ Тут буде реальний PUT-запит на /api/applications/{id}/reject з reason
+            //Тут буде реальний PUT-запит на /api/applications/{id}/reject з reason
             alert(`Заявка #${id} відхилена з причиною: ${reason}. (PUT /reject)`);
         }
     };
@@ -198,23 +182,18 @@ const LecturerView: React.FC<StudentPortalProps> = ({ handleLogout, userRole, us
 };
 
 
-// ===========================================
-// ГОЛОВНИЙ КОМПОНЕНТ (StudentPortal)
-// ===========================================
 const StudentPortal: React.FC<StudentPortalProps> = ({ handleLogout, userRole, userId }) => {
-  // --- Стан для модальних вікон та створення заявки ---
   const [showNewApplicationModal, setShowNewApplicationModal] = useState(false);
   const [selectedType, setSelectedType] = useState('');
   const [newApplicationDescription, setNewApplicationDescription] = useState('');
-  const [passwordForSign, setPasswordForSign] = useState(''); // Для підпису!
+  const [passwordForSign, setPasswordForSign] = useState('');
 
-  // --- Стан для завантаження даних ---
   const [applications, setApplications] = useState<MyApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const studentInfo = {
-    name: 'Іванов Іван Петрович', // ⚠️ Має бути витягнуто з Local Storage/Context
+    name: 'Іванов Іван Петрович',
     group: 'КН-301',
     course: '3 курс',
     faculty: 'Факультет комп\'ютерних наук',
@@ -223,7 +202,6 @@ const StudentPortal: React.FC<StudentPortalProps> = ({ handleLogout, userRole, u
 
   const applicationTypes = Object.keys(APPLICATION_TYPE_MAP);
 
-  // --- 1. ФУНКЦІЯ ЗАВАНТАЖЕННЯ ВЛАСНИХ ЗАЯВОК З API ---
   useEffect(() => {
     const fetchMyApplications = async () => {
         if (userRole !== 'STUDENT') return; 
@@ -231,8 +209,7 @@ const StudentPortal: React.FC<StudentPortalProps> = ({ handleLogout, userRole, u
         
         try {
             setLoading(true);
-            // Ендпоінт для студента
-            const response = await fetch(`${API_BASE_URL}/my`, { 
+            const response = await fetch(`${API_BASE_URL}/my`, { 
                 method: 'GET',
                 headers: { 
                     'Authorization': `Bearer ${token}`,
@@ -242,13 +219,11 @@ const StudentPortal: React.FC<StudentPortalProps> = ({ handleLogout, userRole, u
 
             if (response.ok) {
                 const data = await response.json(); 
-                // МАПІНГ: Використовуємо applicationStatus?.statusName та інші поля з ApplicationResponseDto
                 const mappedApplications: MyApplication[] = data.map((app: any) => ({
                     id: app.applicationId,
                     type: app.applicationType?.typeName || app.title,
                     date: app.createdDate.split('T')[0],
-                    status: app.applicationStatus?.statusName?.toLowerCase() || 'pending', // 'нова', 'approved'
-                    // Якщо статус 'rejected', коментарем буде причина відхилення
+                    status: app.applicationStatus?.statusName?.toLowerCase() || 'pending',
                     comment: app.rejectionReason || app.content, 
                     rejectionReason: app.rejectionReason,
                 }));
@@ -271,68 +246,73 @@ const StudentPortal: React.FC<StudentPortalProps> = ({ handleLogout, userRole, u
     }
   }, [userRole, userId]);
 
-  // --- 2. ФУНКЦІЯ НАДСИЛАННЯ (POST-запит з паролем для підпису) ---
   const addApplication = async () => {
-    if (!selectedType || newApplicationDescription.trim() === '' || !passwordForSign) return;
+    // 1. Валідація
+    if (!selectedType || newApplicationDescription.trim() === '' || !passwordForSign) {
+        alert("Будь ласка, оберіть тип, введіть опис та пароль.");
+        return;
+    }
 
-    const typeId = APPLICATION_TYPE_MAP[selectedType];
-    if (!typeId) return;
+    const typeId = APPLICATION_TYPE_MAP[selectedType];
+    if (!typeId) {
+        alert("Недійсний тип заяви.");
+        return;
+    }
 
-    const applicationPayload = {
-        typeId: typeId, 
-        title: selectedType,
-        content: newApplicationDescription,
-        password: passwordForSign, // Пароль для підпису (ApplicationSignRequestDto)
-        // studentId і statusId ігноруємо, бо бекенд бере їх з токена та встановлює 'Нова'
-    };
+    const formData = new FormData();
+    formData.append('typeId', typeId.toString());
+    formData.append('title', selectedType);
+    formData.append('content', newApplicationDescription);
+    formData.append('password', passwordForSign);
+    
+    if (selectedFile) {
+        formData.append('file', selectedFile); 
+    }
 
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('authToken');
 
-    try {
-        // Тут ми показуємо індикатор завантаження під час POST-запиту
-        // setLoading(true); // Можна використати окремий стан для модального вікна
-        const response = await fetch(`${API_BASE_URL}/sign-submit`, { 
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`, 
-            },
-            body: JSON.stringify(applicationPayload),
-        });
+    try {
+        const response = await fetch(`${API_BASE_URL}/sign-submit`, { 
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`, 
+            },
+            body: formData,
+        });
 
-        if (response.ok) {
-            const newAppResponse = await response.json(); 
-            
-            // Оновлення списку з отриманими даними (це автоматично оновить UI)
-            const newApp: MyApplication = { 
-                id: newAppResponse.applicationId, 
-                type: newAppResponse.applicationType?.typeName || selectedType,
-                date: new Date(newAppResponse.createdDate).toISOString().split('T')[0],
-                status: newAppResponse.applicationStatus?.statusName?.toLowerCase() || 'нова', 
-                comment: newAppResponse.content
-            };
+        if (response.ok) {
+            const newAppResponse = await response.json(); 
+            
+            const newApp: MyApplication = { 
+                id: newAppResponse.applicationId, 
+                type: newAppResponse.applicationType?.typeName || selectedType,
+                date: new Date(newAppResponse.createdDate).toISOString().split('T')[0],
+                status: newAppResponse.applicationStatus?.statusName?.toLowerCase() || 'нова', 
+                comment: newAppResponse.content
+            };
 
-            setApplications(prev => [newApp, ...prev]);
-            setShowNewApplicationModal(false);
-            setPasswordForSign('');
-            setError(null); // Очистити загальну помилку, якщо була
+            setApplications(prev => [newApp, ...prev]);
+            setShowNewApplicationModal(false);
+            setSelectedType('');
+            setNewApplicationDescription('');
+            setPasswordForSign('');
+            setSelectedFile(null);
+            setError(null); 
 
-        } else if (response.status === 401) {
+        } else if (response.status === 401) {
              alert("Помилка підпису: Невірний пароль для підтвердження.");
         } else {
-            const errorData = await response.json();
-            alert(`Помилка подачі заявки: ${errorData.message || 'Невідома помилка'}`);
-        }
-    } catch (error) {
-        alert("Не вдалося підключитися до сервера. Перевірте мережу.");
-    } // finally { setLoading(false); }
-  };
+            const errorData = await response.json().catch(() => ({ message: 'Невідома помилка сервера.' }));
+            alert(`Помилка подачі заявки: ${errorData.message}`);
+        }
+    } catch (error) {
+        alert("Не вдалося підключитися до сервера. Перевірте мережу.");
+    }
+};
 
 
-  // 3. HEADER та LOGOUT (Загальні елементи)
   const PortalHeader = (title: string, subtitle: string, initials: string) => (
-    // ... (Ваш JSX для PortalHeader) ...
-        <header className="bg-white shadow-sm border-b border-slate-200">
+        <header className="bg-white shadow-sm border-b border-slate-200">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
@@ -383,7 +363,6 @@ const StudentPortal: React.FC<StudentPortalProps> = ({ handleLogout, userRole, u
       {PortalHeader("Особистий кабінет", "Студентський портал", "ІІ")}
       
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Student Info Card */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8">
             <div className="flex items-start justify-between">
                 <div className="flex items-center space-x-4">
@@ -415,7 +394,6 @@ const StudentPortal: React.FC<StudentPortalProps> = ({ handleLogout, userRole, u
             </div>
         </div>
 
-        {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
             <div className="bg-white rounded-xl shadow-sm border border-blue-200 p-4">
                 <div className="flex items-center justify-between">
@@ -506,7 +484,6 @@ const StudentPortal: React.FC<StudentPortalProps> = ({ handleLogout, userRole, u
                         <Calendar className="w-4 h-4" />
                         <span>Подано: {new Date(app.date).toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
                       </div>
-                      {/* Відображаємо коментар/опис, як раніше */}
                       {app.comment && (
                         <div className="flex items-start space-x-2 text-sm text-slate-700 bg-white/50 rounded-lg p-3 mt-2">
                           <MessageSquare className="w-4 h-4 mt-0.5 flex-shrink-0" />
@@ -519,7 +496,6 @@ const StudentPortal: React.FC<StudentPortalProps> = ({ handleLogout, userRole, u
                     <span className="px-3 py-1 rounded-full text-sm font-medium bg-white shadow-sm">
                       {getStatusText(app.status)}
                     </span>
-                      {/* КНОПКИ РЕДАГУВАННЯ/ВИДАЛЕННЯ (Тільки для PENDING/'нова') */}
                       {(app.status === 'pending' || app.status === 'нова') && (
                           <div className="flex space-x-2">
                               <button className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center">
@@ -546,14 +522,12 @@ const StudentPortal: React.FC<StudentPortalProps> = ({ handleLogout, userRole, u
         </div>
       </main>
 
-      {/* New Application Modal (Модальне вікно для створення заявки) */}
       {showNewApplicationModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6">
             <h3 className="text-2xl font-bold text-slate-900 mb-4">Нова заява</h3>
             <p className="text-sm text-slate-600 mb-6">1. Оберіть тип, 2. Опис, 3. Пароль для підпису</p>
             
-            {/* 1. ВИБІР ТИПУ */}
             <div className="space-y-3 mb-6 grid grid-cols-2 gap-3 max-h-52 overflow-y-auto pr-2">
               {applicationTypes.map((type, idx) => (
                 <button
@@ -583,7 +557,20 @@ const StudentPortal: React.FC<StudentPortalProps> = ({ handleLogout, userRole, u
                 ></textarea>
             </div>
 
-             {/* 3. ПАРОЛЬ ДЛЯ ПІДПИСУ */}
+            {/* 3. ДОДАТИ ПОЛЕ ДЛЯ ФАЙЛУ */}
+            <div className="mb-6">
+                <label htmlFor="application-file" className="block text-sm font-medium text-slate-700 mb-2">
+                    Прикріпити файл (PDF, JPG, DOCX)
+                </label>
+                <input
+                    id="application-file"
+                    type="file"
+                    onChange={(e) => setSelectedFile(e.target.files ? e.target.files[0] : null)}
+                    className="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-blue-500 focus:border-blue-500 text-slate-700"
+                />
+            </div>
+
+             {/* 4. ПАРОЛЬ ДЛЯ ПІДПИСУ */}
             <div className="mb-6">
                 <label htmlFor="sign-password" className="block text-sm font-medium text-slate-700 mb-2">Пароль для підтвердження (ЕЦП)</label>
                 <input
@@ -602,7 +589,7 @@ const StudentPortal: React.FC<StudentPortalProps> = ({ handleLogout, userRole, u
                   setShowNewApplicationModal(false);
                   setSelectedType('');
                   setNewApplicationDescription('');
-                  setPasswordForSign(''); // Очистити пароль
+                  setPasswordForSign('');
                 }}
                 className="flex-1 px-4 py-3 border-2 border-slate-300 text-slate-700 rounded-xl hover:bg-slate-50 transition font-medium"
               >
@@ -610,7 +597,6 @@ const StudentPortal: React.FC<StudentPortalProps> = ({ handleLogout, userRole, u
               </button>
               <button
                 onClick={addApplication}
-                // Кнопка активна, лише якщо обрано тип, опис та введено пароль
                 disabled={!selectedType || newApplicationDescription.trim() === '' || passwordForSign.length < 3}
                 className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
