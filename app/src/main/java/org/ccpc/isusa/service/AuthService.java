@@ -1,6 +1,5 @@
 package org.ccpc.isusa.service;
 
-import lombok.extern.slf4j.Slf4j;
 import org.ccpc.isusa.dto.request.LoginRequestDto;
 import org.ccpc.isusa.dto.request.StudentRegistrationRequestDto;
 import org.ccpc.isusa.dto.request.UserCreateRequestDto;
@@ -9,7 +8,6 @@ import org.ccpc.isusa.dto.response.UserResponseDto;
 import org.ccpc.isusa.entity.Role;
 import org.ccpc.isusa.entity.Student;
 import org.ccpc.isusa.entity.User;
-import org.ccpc.isusa.event.AuditEvent;
 import org.ccpc.isusa.exception.RegistrationException;
 import org.ccpc.isusa.mapper.StudentMapper;
 import org.ccpc.isusa.mapper.UserMapper;
@@ -17,9 +15,7 @@ import org.ccpc.isusa.repository.RoleRepository;
 import org.ccpc.isusa.repository.StudentRepository;
 import org.ccpc.isusa.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -31,7 +27,6 @@ import lombok.RequiredArgsConstructor;
  * "Мозок" для всієї логіки, пов'язаної з реєстрацією та входом.
  * Використовується AuthController та AdminController.
  */
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -52,7 +47,8 @@ public class AuthService {
     // Наш сервіс для JWT-токенів
     private final JwtService jwtService;
 
-    private final ApplicationEventPublisher eventPublisher;
+    // Сервіс для безпеки аутентифікації
+    private final AuthSecurityService authSecurityService;
 
     // Роль за замовчуванням (з application.properties)
     @Value("${isusa.default-student-role-name}")
@@ -101,64 +97,63 @@ public class AuthService {
         // 7. Генеруємо токен
         String jwtToken = jwtService.generateToken(savedUser);
 
-        eventPublisher.publishEvent(new AuditEvent(
-                this,
-                savedUser,              // Хто: Новий користувач
-                "INFO",                 // Рівень
-                "Реєстрація нового студента", // Повідомлення
-                "Student",              // Тип сутності
-                request.getStudentId()  // ID сутності
-        ));
-
         // 8. Повертаємо токен і дані про юзера
         return new LoginResponseDto(jwtToken, userMapper.toResponseDto(savedUser));
     }
 
     /**
-     * Вхід існуючого користувача.
+     * Вхід існуючого користувача (для всіх ролей).
+     * З защитою від brute-force атак та перевіркою soft-delete.
      */
+    @Transactional
     public LoginResponseDto login(LoginRequestDto request) {
+
+        // 1. Завантажуємо User за username (тільки не видалених)
+        var user = userRepository.findByUsernameAndNotDeleted(request.getUsername())
+                .orElseThrow(() -> new RuntimeException("Користувача не знайдено або видалено"));
+
+        // 2. Перевіряємо, чи акаунт заблокований
+        if (authSecurityService.isAccountLocked(user)) {
+            throw new SecurityException("Акаунт заблокований на 15 хвилин через багато невдалих спроб входу");
+        }
+
+        // 3. Перевіряємо, чи активний користувач
+        if (!user.getIsActive()) {
+            throw new SecurityException("Акаунт деактивований. Зверніться до адміністратора");
+        }
+
+        // 4. Spring Security перевіряє логін/пароль.
+        // Якщо пароль невірний, тут буде кинуто виняток (BadCredentialsException).
         try {
-            // 1. Spring Security перевіряє логін/пароль
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             request.getUsername(),
                             request.getPassword()
                     )
             );
-        } catch (BadCredentialsException e) {
-            // --- ЛОГУВАННЯ (Помилка входу) ---
-            // Це важливо для безпеки (brute-force attacks)
-            // Примітка: Ми передаємо null у поле user, бо вхід не вдався,
-            // але в повідомлення пишемо логін, який намагалися використати.
-            eventPublisher.publishEvent(new AuditEvent(
-                    this,
-                    null, // Юзера не авторизовано
-                    "WARN",
-                    "Невдала спроба входу для логіна: " + request.getUsername(),
-                    "Security",
-                    null
-            ));
-            throw e; // Прокидаємо помилку далі, щоб контролер повернув 401/403
+        } catch (Exception e) {
+            // Реєструємо невдалу спробу входу
+            authSecurityService.recordFailedLogin(user);
+            throw new SecurityException("Невірне ім'я користувача або пароль");
         }
 
-        // 2. Якщо аутентифікація пройшла успішно -> дістаємо юзера
-        var user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found after successful authentication"));
+        // 5. Якщо все добре - реєструємо успішний вхід
+        authSecurityService.recordSuccessfulLogin(user);
 
-        // 3. Генеруємо токен
+        // 6. Перевіряємо, чи пароль не дійсний (не змінювався більше 90 днів)
+        if (authSecurityService.isPasswordExpired(user)) {
+            // Генеруємо токен з обмеженими правами для зміни пароля
+            var jwtToken = jwtService.generateToken(user);
+            // У відповіді повідомляємо, що потрібна зміна пароля
+            return new LoginResponseDto(jwtToken, userMapper.toResponseDto(user));
+        }
+
+        // 7. Генеруємо токен
         var jwtToken = jwtService.generateToken(user);
 
-        // --- ЛОГУВАННЯ (Успіх) ---
-        eventPublisher.publishEvent(new AuditEvent(
-                this,
-                user,
-                "INFO",
-                "Успішний вхід в систему",
-                "User", // Тип сутності (сесія юзера)
-                user.getUserId()
-        ));
-
+        // 8. Повертаємо токен і дані про юзера
         return new LoginResponseDto(jwtToken, userMapper.toResponseDto(user));
     }
+
+
 }

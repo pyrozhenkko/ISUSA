@@ -1,27 +1,20 @@
 package org.ccpc.isusa.service;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.ccpc.isusa.dto.request.StudentRegistrationRequestDto;
 import org.ccpc.isusa.dto.request.UserCreateRequestDto;
-import org.ccpc.isusa.dto.response.ApplicationResponseDto;
-import org.ccpc.isusa.dto.response.UserResponseDto;
-import org.ccpc.isusa.entity.Role;
-import org.ccpc.isusa.entity.Student;
-import org.ccpc.isusa.entity.User;
+import org.ccpc.isusa.dto.request.UserUpdateRequestDto;
+import org.ccpc.isusa.dto.response.*;
+import org.ccpc.isusa.entity.*;
 import org.ccpc.isusa.exception.RegistrationException;
-import org.ccpc.isusa.mapper.ApplicationMapper;
-import org.ccpc.isusa.mapper.StudentMapper;
-import org.ccpc.isusa.mapper.UserMapper;
-import org.ccpc.isusa.repository.ApplicationRepository;
-import org.ccpc.isusa.repository.RoleRepository;
-import org.ccpc.isusa.repository.StudentRepository;
-import org.ccpc.isusa.repository.UserRepository;
+import org.ccpc.isusa.mapper.*;
+import org.ccpc.isusa.repository.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.persistence.EntityNotFoundException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -33,60 +26,55 @@ public class AdminService {
     private final RoleRepository roleRepository;
     private final StudentRepository studentRepository;
     private final ApplicationRepository applicationRepository;
+    private final ApplicationHistoryRepository historyRepository;
 
     private final UserMapper userMapper;
     private final StudentMapper studentMapper;
     private final ApplicationMapper applicationMapper;
+    private final ApplicationHistoryMapper historyMapper;
 
     private final PasswordEncoder passwordEncoder;
+
+    // Сервіс для soft-delete користувачів
+    private final UserDeletionService userDeletionService;
 
     @Value("${isusa.default-student-role-name}")
     private String STUDENT_ROLE_NAME;
 
+    // --- СТВОРЕННЯ КОРИСТУВАЧІВ ---
+
     /**
-     * Створення співробітника (ADMIN, TEACHER, DEANERY_STAFF).
+     * Створення СПІВРОБІТНИКА (Admin, Teacher, Deanery).
      */
     @Transactional
     public UserResponseDto createStaff(UserCreateRequestDto request) {
-        validateNewUser(request.getUsername(), request.getEmail());
+        validateUserNotExists(request.getUsername(), request.getEmail());
+        Role role = getRoleOrThrow(request.getRoleName());
 
-        Role role = roleRepository.findByRoleName(request.getRoleName())
-                .orElseThrow(() -> new RegistrationException("Роль '" + request.getRoleName() + "' не знайдена."));
-
-        // Забороняємо створювати студентів через цей метод (для них є окремий)
         if (role.getRoleName().equals(STUDENT_ROLE_NAME)) {
-            throw new RegistrationException("Для створення студентів використовуйте окремий метод.");
+            throw new RegistrationException("Для створення студентів використовуйте createStudent");
         }
 
-        User user = new User();
-        user.setUsername(request.getUsername());
-        user.setFullName(request.getFullName());
-        user.setEmail(request.getEmail());
-        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-        user.setIsActive(true);
-        user.setRole(role);
-
+        User user = createUserEntity(request.getUsername(), request.getPassword(), request.getFullName(), request.getEmail(), role);
         return userMapper.toResponseDto(userRepository.save(user));
     }
 
     /**
-     * Створення студента Адміном.
+     * Створення СТУДЕНТА Адміном.
      */
     @Transactional
     public UserResponseDto createStudent(StudentRegistrationRequestDto request) {
-        validateNewUser(request.getUsername(), request.getEmail());
+        validateUserNotExists(request.getUsername(), request.getEmail());
         if (userRepository.existsByStudentStudentId(request.getStudentId())) {
-            throw new RegistrationException("Студент з таким ID вже існує");
+            throw new RegistrationException("Student ID зайнятий");
         }
 
-        Role studentRole = roleRepository.findByRoleName(STUDENT_ROLE_NAME)
-                .orElseThrow(() -> new RuntimeException("Роль STUDENT не знайдена"));
+        Role studentRole = getRoleOrThrow(STUDENT_ROLE_NAME);
 
         User user = userMapper.toUserEntity(request);
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         user.setRole(studentRole);
         user.setIsActive(true);
-
         User savedUser = userRepository.save(user);
 
         Student student = studentMapper.toStudentEntity(request);
@@ -96,39 +84,82 @@ public class AdminService {
         return userMapper.toResponseDto(savedUser);
     }
 
+    // --- КЕРУВАННЯ АКАУНТАМИ ---
+
     /**
-     * Видалення будь-якого користувача за ID.
+     * Soft-delete користувача (логічне видалення).
+     * Замість видалення з бази, помічаємо як видаленого.
      */
     @Transactional
     public void deleteUser(Integer userId) {
-        if (!userRepository.existsById(userId)) {
-            throw new EntityNotFoundException("Користувача з ID " + userId + " не знайдено");
-        }
-        // Каскадне видалення (якщо налаштовано в БД) або ручне видалення залежностей
-        userRepository.deleteById(userId);
+        userDeletionService.softDeleteUser(userId);
     }
 
     /**
-     * Отримання списку користувачів (можна фільтрувати за роллю).
+     * Відновлення видаленого користувача.
      */
-    @Transactional(readOnly = true)
-    public List<UserResponseDto> getAllUsers(String roleNameFilter) {
-        List<User> users;
-        if (roleNameFilter != null && !roleNameFilter.isEmpty()) {
-            Role role = roleRepository.findByRoleName(roleNameFilter)
-                    .orElseThrow(() -> new EntityNotFoundException("Роль не знайдена"));
-            users = userRepository.findByRole(role); // Тобі треба додати цей метод в UserRepository
-        } else {
-            users = userRepository.findAll();
+    @Transactional
+    public void restoreDeletedUser(Integer userId) {
+        userDeletionService.restoreDeletedUser(userId);
+    }
+
+    @Transactional
+    public UserResponseDto toggleUserActive(Integer userId) {
+        User user = getUserOrThrow(userId);
+        user.setIsActive(!user.getIsActive()); // Інвертуємо статус
+        return userMapper.toResponseDto(userRepository.save(user));
+    }
+
+    @Transactional
+    public UserResponseDto updateUser(Integer userId, UserUpdateRequestDto request) {
+        User user = getUserOrThrow(userId);
+
+        if (request.getFullName() != null && !request.getFullName().isBlank()) {
+            user.setFullName(request.getFullName());
+        }
+        if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            // Тут можна додати перевірку на унікальність email, якщо він змінився
+            user.setEmail(request.getEmail());
         }
 
-        return users.stream()
+        return userMapper.toResponseDto(userRepository.save(user));
+    }
+
+    @Transactional
+    public void resetPassword(Integer userId, String newPassword) {
+        User user = getUserOrThrow(userId);
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+    }
+
+    // --- ПЕРЕГЛЯД ТА ЗВІТИ ---
+
+    @Transactional(readOnly = true)
+    public List<UserResponseDto> getAllUsers(String roleName) {
+        List<User> users;
+        if (roleName != null && !roleName.isBlank()) {
+            Role role = getRoleOrThrow(roleName);
+            // Отримуємо тільки активних користувачів за роллю
+            users = userRepository.findByRoleAndNotDeleted(role);
+        } else {
+            // Отримуємо всіх активних користувачів
+            users = userRepository.findAllActive();
+        }
+        return users.stream().map(userMapper::toResponseDto).collect(Collectors.toList());
+    }
+
+    /**
+     * Отримати видалених користувачів (для адміністративних цілей)
+     */
+    @Transactional(readOnly = true)
+    public List<UserResponseDto> getDeletedUsers() {
+        return userRepository.findAllDeleted().stream()
                 .map(userMapper::toResponseDto)
                 .collect(Collectors.toList());
     }
 
     /**
-     * Отримання списку ВСІХ заявок (для адмінської панелі).
+     * Отримати всі заявки (для адмінської таблиці).
      */
     @Transactional(readOnly = true)
     public List<ApplicationResponseDto> getAllApplications() {
@@ -137,12 +168,66 @@ public class AdminService {
                 .collect(Collectors.toList());
     }
 
-    private void validateNewUser(String username, String email) {
-        if (userRepository.findByUsername(username).isPresent()) {
-            throw new RegistrationException("Користувач з таким логіном вже існує");
+    /**
+     * Звіт по Студенту (всі його заявки).
+     */
+    @Transactional(readOnly = true)
+    public UserActivityReportDto getStudentHistory(Integer userId) {
+        User user = getUserOrThrow(userId);
+        if (!"STUDENT".equals(user.getRole().getRoleName())) {
+            throw new IllegalArgumentException("Цей користувач не є студентом");
         }
-        if (userRepository.findByEmail(email).isPresent()) {
-            throw new RegistrationException("Користувач з такою поштою вже існує");
-        }
+        Student student = studentRepository.findByUser(user)
+                .orElseThrow(() -> new EntityNotFoundException("Student profile not found"));
+
+        List<Application> apps = applicationRepository.findByStudent(student);
+
+        return UserActivityReportDto.builder()
+                .user(userMapper.toResponseDto(user))
+                .totalApplications(apps.size())
+                .applications(apps.stream().map(applicationMapper::toResponseDto).collect(Collectors.toList()))
+                .build();
+    }
+
+    /**
+     * Звіт по Працівнику (історія його дій).
+     */
+    @Transactional(readOnly = true)
+    public UserActivityReportDto getStaffActivityHistory(Integer userId) {
+        User user = getUserOrThrow(userId);
+        List<ApplicationHistory> history = historyRepository.findByChangedByUser(user);
+
+        return UserActivityReportDto.builder()
+                .user(userMapper.toResponseDto(user))
+                .totalApplications(history.size())
+                .history(historyMapper.toDtoList(history))
+                .build();
+    }
+
+    // --- ХЕЛПЕРИ ---
+
+    private User createUserEntity(String username, String password, String fullName, String email, Role role) {
+        User user = new User();
+        user.setUsername(username);
+        user.setFullName(fullName);
+        user.setEmail(email);
+        user.setPasswordHash(passwordEncoder.encode(password));
+        user.setIsActive(true);
+        user.setRole(role);
+        return user;
+    }
+
+    private void validateUserNotExists(String username, String email) {
+        if (userRepository.findByUsername(username).isPresent()) throw new RegistrationException("Username taken");
+        if (userRepository.findByEmail(email).isPresent()) throw new RegistrationException("Email taken");
+    }
+
+    private Role getRoleOrThrow(String roleName) {
+        return roleRepository.findByRoleName(roleName)
+                .orElseThrow(() -> new EntityNotFoundException("Role '" + roleName + "' not found"));
+    }
+
+    private User getUserOrThrow(Integer id) {
+        return userRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("User not found"));
     }
 }
