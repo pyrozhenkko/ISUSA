@@ -4,45 +4,83 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 @Entity
-@Table(name = "users")  // ✅ нижній регістр
+@Table(name = "users")
 @Getter
 @Setter
 @NoArgsConstructor
+@SQLDelete(sql = "UPDATE users SET is_deleted = true, deleted_date = NOW() WHERE userid = ?")
+@SQLRestriction("is_deleted = false")
 public class User implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "userid")  // ✅ нижній регістр
+    @Column(name = "userid")
     private Integer userId;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "roleid", nullable = false)  // ✅ нижній регістр
+    @JoinColumn(name = "roleid", nullable = false)
     private Role role;
 
-    @Column(name = "username", length = 100, nullable = false, unique = true)  // ✅ нижній регістр
+    @Column(name = "username", length = 100, nullable = false, unique = true)
     private String username;
+    @Column(name = "failed_login_attempts")
+    private Integer failedLoginAttempts = 0;
 
-    @Column(name = "password_hash", length = 256, nullable = false)  // ✅ нижній регістр
+    @Column(name = "account_locked_until")
+    private LocalDateTime accountLockedUntil;
+
+    @Column(name = "last_login_date")
+    private LocalDateTime lastLoginDate;
+
+    @Column(name = "password_changed_date")
+    private LocalDateTime passwordChangedDate;
+
+    @Column(name = "password_hash", length = 256, nullable = false)
     private String passwordHash;
 
-    @Column(name = "full_name", length = 150)  // ✅ нижній регістр
+    @Column(name = "full_name", length = 150)
     private String fullName;
 
-    @Column(name = "email", length = 100, unique = true)  // ✅ нижній регістр
+    @Column(name = "email", length = 100, unique = true)
     private String email;
 
-    @Column(name = "is_active")  // ✅ нижній регістр
+    @Column(name = "is_active")
     private Boolean isActive = true;
 
+    // === SOFT-DELETE ===
+    @Column(name = "is_deleted")
+    private Boolean isDeleted = false;
+
+    @Column(name = "deleted_date")
+    private LocalDateTime deletedDate;
+
+    @CreationTimestamp
+    @Column(name = "created_date", updatable = false)
+    private LocalDateTime createdDate;
+
+    @UpdateTimestamp
+    @Column(name = "updated_date")
+    private LocalDateTime updatedDate;
+
+    // === ЗВ'ЯЗКИ ===
+
+    // === РУЧНІ ГЕТТЕРИ/СЕТТЕРИ ДЛЯ STUDENT (FIX) ===
+    // Додаємо їх, щоб MapStruct точно їх побачив
+    // (MapStruct не бачив це поле, тому додамо геттер вручну нижче)
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Student student;
 
@@ -71,32 +109,21 @@ public class User implements UserDetails {
     }
 
     @Override
-    public String getPassword() {
-        return this.passwordHash;
-    }
+    public String getPassword() { return this.passwordHash; }
 
     @Override
-    public String getUsername() {
-        return this.username;
-    }
+    public String getUsername() { return this.username; }
 
     @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
+    public boolean isAccountNonExpired() { return true; }
 
     @Override
-    public boolean isAccountNonLocked() {
-        return true;
-    }
+    public boolean isAccountNonLocked() { return true; }
 
     @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
-    }
+    public boolean isCredentialsNonExpired() { return true; }
 
     @Override
-    public boolean isEnabled() {
-        return this.isActive;
-    }
+    public boolean isEnabled() { return this.isActive; }
+
 }
