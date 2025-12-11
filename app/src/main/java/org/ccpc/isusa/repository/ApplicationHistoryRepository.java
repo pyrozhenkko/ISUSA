@@ -1,6 +1,7 @@
 package org.ccpc.isusa.repository;
 
 import org.ccpc.isusa.entity.ApplicationHistory;
+import org.ccpc.isusa.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,4 +18,10 @@ public interface ApplicationHistoryRepository extends JpaRepository<ApplicationH
 
     @Query("SELECT ah FROM ApplicationHistory ah WHERE ah.application.applicationId = :applicationId ORDER BY ah.changeTimestamp DESC")
     List<ApplicationHistory> findByApplicationOrderByDateDesc(@Param("applicationId") Integer applicationId);
+
+    // Знайти всі дії, виконані конкретним користувачем (працівником)
+    List<ApplicationHistory> findByChangedByUser(User user);
+
+    // Знайти історію конкретної заявки (корисно для детального перегляду)
+    List<ApplicationHistory> findByApplicationApplicationId(Integer applicationId);
 }
