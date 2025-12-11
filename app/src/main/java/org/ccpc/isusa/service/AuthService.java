@@ -47,6 +47,9 @@ public class AuthService {
     // Наш сервіс для JWT-токенів
     private final JwtService jwtService;
 
+    // Сервіс для безпеки аутентифікації
+    private final AuthSecurityService authSecurityService;
+
     // Роль за замовчуванням (з application.properties)
     @Value("${isusa.default-student-role-name}")
     private String STUDENT_ROLE_NAME;
@@ -100,26 +103,55 @@ public class AuthService {
 
     /**
      * Вхід існуючого користувача (для всіх ролей).
+     * З защитою від brute-force атак та перевіркою soft-delete.
      */
+    @Transactional
     public LoginResponseDto login(LoginRequestDto request) {
 
-        // 1. Spring Security перевіряє логін/пароль.
+        // 1. Завантажуємо User за username (тільки не видалених)
+        var user = userRepository.findByUsernameAndNotDeleted(request.getUsername())
+                .orElseThrow(() -> new RuntimeException("Користувача не знайдено або видалено"));
+
+        // 2. Перевіряємо, чи акаунт заблокований
+        if (authSecurityService.isAccountLocked(user)) {
+            throw new SecurityException("Акаунт заблокований на 15 хвилин через багато невдалих спроб входу");
+        }
+
+        // 3. Перевіряємо, чи активний користувач
+        if (!user.getIsActive()) {
+            throw new SecurityException("Акаунт деактивований. Зверніться до адміністратора");
+        }
+
+        // 4. Spring Security перевіряє логін/пароль.
         // Якщо пароль невірний, тут буде кинуто виняток (BadCredentialsException).
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getUsername(),
-                        request.getPassword()
-                )
-        );
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.getUsername(),
+                            request.getPassword()
+                    )
+            );
+        } catch (Exception e) {
+            // Реєструємо невдалу спробу входу
+            authSecurityService.recordFailedLogin(user);
+            throw new SecurityException("Невірне ім'я користувача або пароль");
+        }
 
-        // 2. Якщо все добре, завантажуємо User з бази
-        var user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found after successful authentication"));
+        // 5. Якщо все добре - реєструємо успішний вхід
+        authSecurityService.recordSuccessfulLogin(user);
 
-        // 3. Генеруємо токен
+        // 6. Перевіряємо, чи пароль не дійсний (не змінювався більше 90 днів)
+        if (authSecurityService.isPasswordExpired(user)) {
+            // Генеруємо токен з обмеженими правами для зміни пароля
+            var jwtToken = jwtService.generateToken(user);
+            // У відповіді повідомляємо, що потрібна зміна пароля
+            return new LoginResponseDto(jwtToken, userMapper.toResponseDto(user));
+        }
+
+        // 7. Генеруємо токен
         var jwtToken = jwtService.generateToken(user);
 
-        // 4. Повертаємо токен і дані про юзера
+        // 8. Повертаємо токен і дані про юзера
         return new LoginResponseDto(jwtToken, userMapper.toResponseDto(user));
     }
 
