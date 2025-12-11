@@ -5,15 +5,10 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
-/**
- * DTO для Адміна, щоб створити нового співробітника.
- * Зверни увагу, тут НЕМАЄ полів Student, але є назва ролі.
- * Ми додаємо валідацію (@NotBlank, @Email)
- */
 @Data
 public class UserCreateRequestDto {
 
-    @NotBlank(message = "Ім'я користувача (username) не може бути порожнім")
+    @NotBlank(message = "Ім'я користувача не може бути порожнім")
     private String username;
 
     @NotBlank(message = "Пароль не може бути порожнім")
@@ -27,6 +22,9 @@ public class UserCreateRequestDto {
     @NotBlank(message = "Email не може бути порожнім")
     private String email;
 
-    @NotBlank(message = "Назва ролі (roleName) не може бути порожньою")
-    private String roleName; // Напр., "ADMIN", "DEANERY_STAFF", "TEACHER"
+    @NotBlank(message = "Назва ролі не може бути порожньою")
+    private String roleName; // "ADMIN", "TEACHER", "DEANERY_STAFF"
+
+    // Опціональні поля для викладачів/студентів (можна додати пізніше, якщо треба)
+    // private String department;
 }
