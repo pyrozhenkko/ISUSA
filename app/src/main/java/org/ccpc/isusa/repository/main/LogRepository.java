@@ -20,4 +20,10 @@ public interface LogRepository extends JpaRepository<Log, Integer> {
 
     @Query("SELECT l FROM Log l WHERE l.level = :level ORDER BY l.logDate DESC")
     List<Log> findByLevelOrderByDateDesc(@Param("level") String level);
+
+    /**
+     * Знаходить всі нові логи, які з'явилися після останнього успішного запуску ETL.
+     * Сортування за ID гарантує послідовну обробку.
+     */
+    List<Log> findByLogIdGreaterThanOrderByLogIdAsc(Integer lastProcessedId);
 }
