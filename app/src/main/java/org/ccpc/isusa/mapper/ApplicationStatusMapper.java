@@ -1,7 +1,7 @@
 package org.ccpc.isusa.mapper;
 
 import org.ccpc.isusa.dto.response.ApplicationStatusResponseDto;
-import org.ccpc.isusa.entity.ApplicationStatus;
+import org.ccpc.isusa.entity.main.ApplicationStatus;
 import org.mapstruct.Mapper;
 
 import java.util.List;

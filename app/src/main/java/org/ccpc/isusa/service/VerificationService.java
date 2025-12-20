@@ -2,8 +2,8 @@ package org.ccpc.isusa.service;
 
 import lombok.RequiredArgsConstructor;
 import org.ccpc.isusa.dto.response.ApplicationVerificationResponseDto;
-import org.ccpc.isusa.entity.Application;
-import org.ccpc.isusa.repository.ApplicationRepository;
+import org.ccpc.isusa.entity.main.Application;
+import org.ccpc.isusa.repository.main.ApplicationRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

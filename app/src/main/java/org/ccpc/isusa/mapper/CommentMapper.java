@@ -2,7 +2,7 @@ package org.ccpc.isusa.mapper;
 
 import org.ccpc.isusa.dto.request.CommentRequestDto;
 import org.ccpc.isusa.dto.response.CommentResponseDto;
-import org.ccpc.isusa.entity.Comment;
+import org.ccpc.isusa.entity.main.Comment;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 

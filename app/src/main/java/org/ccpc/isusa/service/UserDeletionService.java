@@ -3,8 +3,8 @@ package org.ccpc.isusa.service;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.ccpc.isusa.entity.User;
-import org.ccpc.isusa.repository.UserRepository;
+import org.ccpc.isusa.entity.main.User;
+import org.ccpc.isusa.repository.main.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

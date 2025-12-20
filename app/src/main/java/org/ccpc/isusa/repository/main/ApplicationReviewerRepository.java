@@ -1,7 +1,7 @@
-package org.ccpc.isusa.repository;
+package org.ccpc.isusa.repository.main;
 
-import org.ccpc.isusa.entity.ApplicationReviewer;
-import org.ccpc.isusa.entity.ApplicationReviewerId;
+import org.ccpc.isusa.entity.main.ApplicationReviewer;
+import org.ccpc.isusa.entity.main.ApplicationReviewerId;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

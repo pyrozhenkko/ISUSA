@@ -1,6 +1,6 @@
-package org.ccpc.isusa.repository;
+package org.ccpc.isusa.repository.main;
 
-import org.ccpc.isusa.entity.ApplicationStatus;
+import org.ccpc.isusa.entity.main.ApplicationStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

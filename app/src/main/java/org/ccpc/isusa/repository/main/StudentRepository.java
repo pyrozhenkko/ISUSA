@@ -1,7 +1,7 @@
-package org.ccpc.isusa.repository;
+package org.ccpc.isusa.repository.main;
 
-import org.ccpc.isusa.entity.Student;
-import org.ccpc.isusa.entity.User;
+import org.ccpc.isusa.entity.main.Student;
+import org.ccpc.isusa.entity.main.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

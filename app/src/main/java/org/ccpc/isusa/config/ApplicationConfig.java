@@ -1,6 +1,6 @@
 package org.ccpc.isusa.config;
 
-import org.ccpc.isusa.repository.UserRepository;
+import org.ccpc.isusa.repository.main.UserRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;

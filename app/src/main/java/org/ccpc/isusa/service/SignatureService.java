@@ -2,7 +2,6 @@ package org.ccpc.isusa.service;
 
 import lombok.RequiredArgsConstructor;
 import org.ccpc.isusa.config.keys.KeyService;
-import org.ccpc.isusa.entity.Application;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;

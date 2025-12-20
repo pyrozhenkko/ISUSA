@@ -2,8 +2,8 @@ package org.ccpc.isusa.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.ccpc.isusa.entity.User;
-import org.ccpc.isusa.repository.UserRepository;
+import org.ccpc.isusa.entity.main.User;
+import org.ccpc.isusa.repository.main.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

@@ -8,7 +8,7 @@ import org.ccpc.isusa.dto.request.ApplicationStatusUpdateDto;
 import org.ccpc.isusa.dto.request.SignExistingDraftDto;
 import org.ccpc.isusa.dto.response.ApplicationResponseDto;
 import org.ccpc.isusa.dto.response.ApplicationVerificationResponseDto;
-import org.ccpc.isusa.entity.User;
+import org.ccpc.isusa.entity.main.User;
 import org.ccpc.isusa.service.ApplicationService;
 import org.ccpc.isusa.service.VerificationService;
 import org.springframework.http.HttpStatus;

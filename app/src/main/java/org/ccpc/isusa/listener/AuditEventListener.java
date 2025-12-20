@@ -2,9 +2,9 @@ package org.ccpc.isusa.listener;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.ccpc.isusa.entity.Log;
+import org.ccpc.isusa.entity.main.Log;
 import org.ccpc.isusa.event.AuditEvent;
-import org.ccpc.isusa.repository.LogRepository;
+import org.ccpc.isusa.repository.main.LogRepository;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;

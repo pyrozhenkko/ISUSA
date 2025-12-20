@@ -2,7 +2,7 @@ package org.ccpc.isusa.mapper;
 
 import org.ccpc.isusa.dto.request.AttachmentRequestDto;
 import org.ccpc.isusa.dto.response.AttachmentResponseDto;
-import org.ccpc.isusa.entity.Attachment;
+import org.ccpc.isusa.entity.main.Attachment;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 

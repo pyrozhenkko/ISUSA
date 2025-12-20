@@ -2,7 +2,7 @@ package org.ccpc.isusa.mapper;
 
 import org.ccpc.isusa.dto.request.ApplicationSignRequestDto;
 import org.ccpc.isusa.dto.response.ApplicationResponseDto;
-import org.ccpc.isusa.entity.Application;
+import org.ccpc.isusa.entity.main.Application;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 

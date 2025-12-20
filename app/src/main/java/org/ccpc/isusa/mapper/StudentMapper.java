@@ -2,7 +2,7 @@ package org.ccpc.isusa.mapper;
 
 import org.ccpc.isusa.dto.request.StudentRegistrationRequestDto;
 import org.ccpc.isusa.dto.response.StudentResponseDto;
-import org.ccpc.isusa.entity.Student;
+import org.ccpc.isusa.entity.main.Student;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 

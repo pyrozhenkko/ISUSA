@@ -1,7 +1,7 @@
 package org.ccpc.isusa.event;
 
 import lombok.Getter;
-import org.ccpc.isusa.entity.User;
+import org.ccpc.isusa.entity.main.User;
 import org.springframework.context.ApplicationEvent;
 
 @Getter

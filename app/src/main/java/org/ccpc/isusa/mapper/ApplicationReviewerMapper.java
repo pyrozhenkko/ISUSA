@@ -2,7 +2,7 @@ package org.ccpc.isusa.mapper;
 
 import org.ccpc.isusa.dto.request.ApplicationReviewerRequestDto;
 import org.ccpc.isusa.dto.response.ApplicationReviewerResponseDto;
-import org.ccpc.isusa.entity.ApplicationReviewer;
+import org.ccpc.isusa.entity.main.ApplicationReviewer;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 

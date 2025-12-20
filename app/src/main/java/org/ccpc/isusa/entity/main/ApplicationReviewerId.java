@@ -1,4 +1,4 @@
-package org.ccpc.isusa.entity;
+package org.ccpc.isusa.entity.main;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
