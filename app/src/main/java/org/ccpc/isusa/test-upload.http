@@ -1,0 +1,45 @@
+### 1. Логін Студента
+POST http://localhost:8081/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "student_test",
+  "password": "password123"
+}
+
+> {%
+    client.global.set("auth_token", response.body.token);
+%}
+
+### 2. Створення Чернетки (отримаємо ID)
+POST http://localhost:8081/api/applications/draft
+Content-Type: application/json
+Authorization: Bearer {{auth_token}}
+
+{
+  "typeId": 1,
+  "title": "Чернетка з фото",
+  "content": "Тут буде фото"
+}
+
+> {%
+    client.global.set("app_id", response.body.applicationId);
+%}
+
+### 3. Завантаження Фото (Multipart)
+POST http://localhost:8081/api/attachments/upload/{{app_id}}
+Authorization: Bearer {{auth_token}}
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="image.jpg"
+
+< ./image.jpg
+--boundary--
+
+### 4. Перевірка (Дивимось деталі заявки)
+GET http://localhost:8081/api/applications/my/{{app_id}}
+Authorization: Bearer {{auth_token}}
+
+**Результат:**
+У відповіді на 4-й запит ви побачите поле `attachments`, яке міститиме масив із інформацією про ваш завантажений файл.

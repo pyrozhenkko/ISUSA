@@ -12,12 +12,15 @@ import org.ccpc.isusa.entity.main.User;
 import org.ccpc.isusa.service.ApplicationService;
 import org.ccpc.isusa.service.VerificationService;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -27,6 +30,38 @@ public class ApplicationController {
 
     private final ApplicationService applicationService;
     private final VerificationService verificationService;
+
+    /**
+     * Створити, підписати заявку ТА завантажити фото одним запитом.
+     * Content-Type: multipart/form-data
+     */
+    @PostMapping(value = "/sign-submit-with-photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAuthority('application:create')")
+    public ResponseEntity<ApplicationResponseDto> signSubmitWithPhoto(
+            @RequestParam("typeId") Integer typeId,
+            @RequestParam("title") String title,
+            @RequestParam("content") String content,
+            @RequestParam("password") String password,
+            @RequestParam(value = "file", required = false) MultipartFile file,
+            @AuthenticationPrincipal User currentUser
+    ) {
+        try {
+            // Збираємо DTO вручну
+            ApplicationSignRequestDto request = new ApplicationSignRequestDto();
+            request.setTypeId(typeId);
+            request.setTitle(title);
+            request.setContent(content);
+            request.setPassword(password);
+
+            return ResponseEntity.ok(
+                    applicationService.signAndSubmitWithPhoto(request, file, currentUser)
+            );
+        } catch (SecurityException e) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Невірний пароль");
+        } catch (IOException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Помилка файлу");
+        }
+    }
 
     // === БЛОК СТУДЕНТА (CRUD + ПІДПИС) ===
 
