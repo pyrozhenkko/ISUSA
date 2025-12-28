@@ -61,13 +61,14 @@ INSERT INTO role_permissions (roleid, permissionid)
 SELECT r.roleid, p.permissionid
 FROM roles r, permissions p
 WHERE r.role_name = 'ADMIN'
-  AND p.permission_name IN ('application:read', 'application:update_status', 'application:verify_sign', 'user:manage')
     ON CONFLICT (roleid, permissionid) DO NOTHING;
 
 -- =================================================================
 -- 4. СТАТУСИ ЗАЯВОК (APPLICATION_STATUS)
+-- ВАЖЛИВО: Додано "Чернетка"!
 -- =================================================================
 INSERT INTO application_status (status_name) VALUES
+                                                 ('Чернетка'),                -- ← ДОДАНО! Потрібно для createDraft
                                                  ('Нова'),
                                                  ('На розгляді'),
                                                  ('Потребує уточнення'),
@@ -81,7 +82,7 @@ INSERT INTO application_status (status_name) VALUES
 -- =================================================================
 INSERT INTO application_type (type_name, description) VALUES
                                                           ('Матеріальна допомога', 'Заява на отримання одноразової грошової допомоги.'),
-                                                          ('Академічна відпустка', 'Заява на перерву у навчанні за станом здоров’я.'),
+                                                          ('Академічна відпустка', 'Заява на перерву у навчанні за станом здоров''я.'),
                                                           ('Поселення у гуртожиток', 'Заява на надання ліжко-місця.'),
                                                           ('Індивідуальний графік', 'Переведення на індивідуальний графік навчання.'),
                                                           ('Дублікат квитка', 'Виготовлення нового студентського квитка.'),
@@ -91,14 +92,41 @@ INSERT INTO application_type (type_name, description) VALUES
 -- =================================================================
 -- 6. СТВОРЕННЯ СУПЕР-АДМІНА
 -- Логін: admin / Пароль: adminpass
+-- Хеш згенеровано BCrypt для пароля "adminpass"
 -- =================================================================
 INSERT INTO users (roleid, username, password_hash, full_name, email, is_active)
 VALUES (
            (SELECT roleid FROM roles WHERE role_name = 'ADMIN'),
            'admin',
-           '$2a$10$t3X.d6H1Xl3L4Qo2g5Y9sO.xK2c9aB0J1K8L5O.xK2c9aB0J1K8L5O',
+           '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', -- adminpass
            'Головний Адміністратор',
            'admin@university.edu',
            TRUE
        )
     ON CONFLICT (username) DO NOTHING;
+
+-- =================================================================
+-- 7. СТВОРЕННЯ ТЕСТОВОГО СТУДЕНТА
+-- Логін: student / Пароль: student123
+-- =================================================================
+INSERT INTO users (roleid, username, password_hash, full_name, email, is_active)
+VALUES (
+           (SELECT roleid FROM roles WHERE role_name = 'STUDENT'),
+           'student',
+           '$2a$10$rVvSmxxWDXHfnlmWHVV7qOcpnwXN.ksKGgxvPJTQW.5z8LBq8K7Xa', -- student123
+           'Іван Іваненко',
+           'student@university.edu',
+           TRUE
+       )
+    ON CONFLICT (username) DO NOTHING;
+
+-- Додати студента до таблиці students
+INSERT INTO students (studentid, userid, faculty, specialty, groupid)
+VALUES (
+           (SELECT userid FROM users WHERE username = 'student'),
+           (SELECT userid FROM users WHERE username = 'student'),
+           'Факультет Інформаційних Технологій',
+           'Програмна Інженерія',
+           'ПІ-21'
+       )
+    ON CONFLICT (userid) DO NOTHING;
