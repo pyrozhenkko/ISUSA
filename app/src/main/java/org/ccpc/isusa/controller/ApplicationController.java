@@ -8,7 +8,7 @@ import org.ccpc.isusa.dto.request.ApplicationStatusUpdateDto;
 import org.ccpc.isusa.dto.request.SignExistingDraftDto;
 import org.ccpc.isusa.dto.response.ApplicationResponseDto;
 import org.ccpc.isusa.dto.response.ApplicationVerificationResponseDto;
-import org.ccpc.isusa.entity.main.User;
+import org.ccpc.isusa.entity.main.User; // Використовуємо User entity
 import org.ccpc.isusa.service.ApplicationService;
 import org.ccpc.isusa.service.VerificationService;
 import org.springframework.http.HttpStatus;
@@ -33,7 +33,6 @@ public class ApplicationController {
 
     /**
      * Створити, підписати заявку ТА завантажити фото одним запитом.
-     * Content-Type: multipart/form-data
      */
     @PostMapping(value = "/sign-submit-with-photo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAuthority('application:create')")
@@ -78,7 +77,7 @@ public class ApplicationController {
     }
 
     /**
-     * Редагувати ЧЕРНЕТКУ (Якщо вже підписана - буде помилка).
+     * Редагувати ЧЕРНЕТКУ.
      */
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('application:create')")
@@ -121,7 +120,13 @@ public class ApplicationController {
             @Valid @RequestBody SignExistingDraftDto request,
             @AuthenticationPrincipal User currentUser
     ) {
-        return ResponseEntity.ok(applicationService.signExistingDraft(id, request.getPassword(), currentUser));
+        try {
+            return ResponseEntity.ok(applicationService.signExistingDraft(id, request.getPassword(), currentUser));
+        } catch (SecurityException e) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, e.getMessage());
+        } catch (IllegalStateException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+        }
     }
 
     /**
@@ -133,7 +138,12 @@ public class ApplicationController {
             @Valid @RequestBody ApplicationSignRequestDto request,
             @AuthenticationPrincipal User currentUser
     ) {
-        return ResponseEntity.ok(applicationService.createAndSignApplication(request, currentUser));
+        try {
+            // ВИПРАВЛЕНО: Викликаємо правильний метод сервісу
+            return ResponseEntity.ok(applicationService.signAndSubmitApplication(request, currentUser));
+        } catch (SecurityException e) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Невірний пароль для підпису");
+        }
     }
 
     /**
