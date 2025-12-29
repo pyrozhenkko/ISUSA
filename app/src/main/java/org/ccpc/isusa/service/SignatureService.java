@@ -1,7 +1,11 @@
 package org.ccpc.isusa.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.ccpc.isusa.config.keys.KeyService;
+import org.ccpc.isusa.entity.main.User;
+import org.ccpc.isusa.event.AuditEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
@@ -19,10 +23,12 @@ import java.util.UUID;
  * 4. verify - Перевіряє підпис Публічним Ключем RSA.
  */
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class SignatureService {
 
     private final KeyService keyService;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * Створює хеш-відбиток змісту заявки (SHA-256).
@@ -59,15 +65,23 @@ public class SignatureService {
     /**
      * "Запечатує" (підписує) рядок даних за допомогою Приватного Ключа сервера.
      */
-    public String sign(String dataToSign) {
+    public String sign(String dataToSign, User performer, Integer applicationId) {
         try {
             Signature rsa = Signature.getInstance("SHA256withRSA");
             // Ініціалізуємо Приватним Ключем для ПІДПИСУ
             rsa.initSign(keyService.getPrivateKey());
             rsa.update(dataToSign.getBytes(StandardCharsets.UTF_8));
             byte[] signature = rsa.sign();
-            return Base64.getEncoder().encodeToString(signature);
+
+            String encodedSignature = Base64.getEncoder().encodeToString(signature);
+
+            // 1. ЛОГ: Фіксуємо факт накладання цифрового підпису
+            publishAudit(performer, "INFO", "Накладено цифровий підпис на заявку", applicationId);
+
+            return encodedSignature;
         } catch (Exception e) {
+            // 2. ЛОГ: Критична помилка безпеки
+            publishAudit(performer, "ERROR", "КРИТИЧНО: Помилка при спробі підписати дані: " + e.getMessage(), applicationId);
             throw new RuntimeException("Критична помилка: не вдалося підписати дані", e);
         }
     }
@@ -88,5 +102,19 @@ public class SignatureService {
             // Це очікувана поведінка при спробі підробки
             return false;
         }
+    }
+
+    /**
+     * Допоміжний метод для надсилання подій аудиту
+     */
+    private void publishAudit(User user, String level, String message, Integer appId) {
+        eventPublisher.publishEvent(new AuditEvent(
+                this,
+                user,
+                level,
+                message,
+                "Application",
+                appId
+        ));
     }
 }

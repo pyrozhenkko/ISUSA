@@ -2,6 +2,7 @@ package org.ccpc.isusa.service;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.ccpc.isusa.dto.request.ApplicationDraftRequestDto;
 import org.ccpc.isusa.dto.request.ApplicationReviewerRequestDto;
 import org.ccpc.isusa.dto.request.ApplicationSignRequestDto;
@@ -9,9 +10,11 @@ import org.ccpc.isusa.dto.request.ApplicationStatusUpdateDto;
 import org.ccpc.isusa.dto.response.ApplicationResponseDto;
 import org.ccpc.isusa.dto.response.ApplicationTypeResponseDto;
 import org.ccpc.isusa.entity.main.*;
+import org.ccpc.isusa.event.AuditEvent;
 import org.ccpc.isusa.mapper.ApplicationMapper;
 import org.ccpc.isusa.mapper.ApplicationTypeMapper;
 import org.ccpc.isusa.repository.main.*;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
@@ -26,6 +29,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ApplicationService {
 
     private final ApplicationRepository applicationRepository;
@@ -41,6 +45,8 @@ public class ApplicationService {
 
     // ДОДАНО: Сервіс для роботи з файлами (необхідний для signAndSubmitWithPhoto)
     private final AttachmentService attachmentService;
+
+    private final ApplicationEventPublisher eventPublisher;
 
     // =================================================================================
     //                               ЛОГІКА СТУДЕНТА
@@ -71,6 +77,8 @@ public class ApplicationService {
         if (file != null && !file.isEmpty()) {
             attachmentService.addAttachment(savedAppDto.getApplicationId(), file, currentUser);
 
+            // Логування вкладення зазвичай вже є в AttachmentService, але можна продублювати тут
+            publishAudit(currentUser, "INFO", "Додано фото до заявки", savedAppDto.getApplicationId());
             // Оновлюємо DTO, щоб він включав нове вкладення
             return getMyApplicationById(savedAppDto.getApplicationId(), currentUser);
         }
@@ -100,7 +108,9 @@ public class ApplicationService {
         app = applicationRepository.save(app);
 
         // Підписуємо
-        signApplicationData(app, student);
+        signApplicationData(app, student, currentUser);
+
+        publishAudit(currentUser, "INFO", "Заявка створена та підписана: " + app.getTitle(), app.getApplicationId());
 
         return applicationMapper.toResponseDto(applicationRepository.save(app));
     }
@@ -121,6 +131,8 @@ public class ApplicationService {
         app.setApplicationType(type);
         app.setApplicationStatus(draftStatus);
 
+        publishAudit(currentUser, "INFO", "Створено чернетку заявки: " + app.getTitle(), app.getApplicationId());
+
         return applicationMapper.toResponseDto(applicationRepository.save(app));
     }
 
@@ -133,15 +145,15 @@ public class ApplicationService {
         Application app = getApplicationOrThrow(appId, student);
 
         if (!"Чернетка".equals(app.getApplicationStatus().getStatusName())) {
-            throw new IllegalStateException("Редагувати можна тільки чернетки! Ця заява вже подана.");
+            publishAudit(currentUser, "WARN", "Спроба редагувати подану заявку", appId);
+            throw new IllegalStateException("Редагувати можна тільки чернетки!");
         }
-
-        ApplicationType type = getTypeOrThrow(dto.getTypeId());
 
         app.setTitle(dto.getTitle());
         app.setContent(dto.getContent());
-        app.setApplicationType(type);
+        app.setApplicationType(getTypeOrThrow(dto.getTypeId()));
 
+        publishAudit(currentUser, "INFO", "Оновлено чернетку заявки", appId);
         return applicationMapper.toResponseDto(applicationRepository.save(app));
     }
 
@@ -154,10 +166,12 @@ public class ApplicationService {
         Application app = getApplicationOrThrow(appId, student);
 
         if (!"Чернетка".equals(app.getApplicationStatus().getStatusName())) {
-            throw new IllegalStateException("Ви не можете видалити подану заяву. Зверніться до деканату.");
+            publishAudit(currentUser, "WARN", "Спроба видалити подану заявку", appId);
+            throw new IllegalStateException("Ви не можете видалити подану заяву.");
         }
 
         applicationRepository.delete(app);
+        publishAudit(currentUser, "INFO", "Видалено чернетку заявки ID: " + appId, appId);
     }
 
     /**
@@ -177,8 +191,11 @@ public class ApplicationService {
         ApplicationStatus newStatus = getStatusOrThrow("Нова");
         app.setApplicationStatus(newStatus);
 
-        signApplicationData(app, student);
+        app.setApplicationStatus(getStatusOrThrow("Нова"));
 
+        signApplicationData(app, student, currentUser);
+
+        publishAudit(currentUser, "INFO", "Чернетку підписано та подано", appId);
         return applicationMapper.toResponseDto(applicationRepository.save(app));
     }
 
@@ -240,6 +257,8 @@ public class ApplicationService {
         app.setProcessedByUser(user);
         app.setUpdatedDate(LocalDateTime.now());
 
+        publishAudit(user, "INFO", "Змінено статус заявки на: " + status.getStatusName(), id);
+
         return applicationMapper.toResponseDto(applicationRepository.save(app));
     }
 
@@ -260,6 +279,8 @@ public class ApplicationService {
 
         app.getReviewers().add(review);
 
+        publishAudit(reviewer, "INFO", "Додано рекомендацію викладача", appId);
+
         return applicationMapper.toResponseDto(applicationRepository.save(app));
     }
 
@@ -275,18 +296,23 @@ public class ApplicationService {
         }
     }
 
-    private void signApplicationData(Application app, Student student) {
+    private void signApplicationData(Application app, Student student, User currentUser) {
         String contentHash = signatureService.hashData(app.getContent());
         String dataToSign = signatureService.generateDataToSign(
                 student.getStudentId(),
                 app.getApplicationId(),
                 contentHash
         );
-        String signature = signatureService.sign(dataToSign);
+
+        String signature = signatureService.sign(dataToSign, currentUser, app.getApplicationId());
 
         app.setContentHash(contentHash);
         app.setDataToSign(dataToSign);
         app.setSignature(signature);
+    }
+
+    private void publishAudit(User user, String level, String message, Integer entityId) {
+        eventPublisher.publishEvent(new AuditEvent(this, user, level, message, "Application", entityId));
     }
 
     private Student getStudentOrThrow(User user) {
@@ -308,4 +334,5 @@ public class ApplicationService {
         return statusRepository.findByStatusName(statusName)
                 .orElseThrow(() -> new RuntimeException("Статус '" + statusName + "' не знайдено"));
     }
+
 }

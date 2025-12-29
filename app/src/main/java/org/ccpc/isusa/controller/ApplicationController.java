@@ -192,9 +192,18 @@ public class ApplicationController {
         return ResponseEntity.ok(applicationService.updateApplicationStatus(id, dto, currentUser));
     }
 
+    /**
+     * ПЕРЕВІРКА ПІДПИСУ (З аудитом)
+     * Додано @AuthenticationPrincipal для фіксації перевіряючого.
+     */
     @GetMapping("/{id}/verify")
     @PreAuthorize("hasAuthority('application:verify_sign')")
-    public ResponseEntity<ApplicationVerificationResponseDto> verifySign(@PathVariable Integer id) {
-        return ResponseEntity.ok(verificationService.verifyApplicationIntegrity(id));
+    public ResponseEntity<ApplicationVerificationResponseDto> verifySign(
+            @PathVariable Integer id,
+            @AuthenticationPrincipal User currentUser // <--- Отримуємо того, хто перевіряє
+    ) {
+        // Передаємо два параметри: ID заявки та об'єкт користувача
+        return ResponseEntity.ok(verificationService.verifyApplicationIntegrity(id, currentUser));
     }
+
 }

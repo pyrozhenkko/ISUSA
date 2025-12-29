@@ -3,8 +3,10 @@ package org.ccpc.isusa.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ccpc.isusa.entity.main.User;
+import org.ccpc.isusa.event.AuditEvent;
 import org.ccpc.isusa.repository.main.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +22,7 @@ import java.time.LocalDateTime;
 public class AuthSecurityService {
 
     private final UserRepository userRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     // Конфігурація
     @Value("${isusa.security.max-failed-attempts:5}")
@@ -46,6 +49,9 @@ public class AuthSecurityService {
         user.setFailedLoginAttempts(0);
         userRepository.save(user);
         log.info("Акаунт розблокований: {}", user.getUsername());
+
+        //ЛОГ: Автоматичне розблокування акаунту
+        publishAudit(user, "INFO", "Акаунт автоматично розблокований після завершення терміну блокування", user.getUserId());
         return false;
     }
 
@@ -60,12 +66,17 @@ public class AuthSecurityService {
             user.getUsername(),
             user.getFailedLoginAttempts());
 
+        //ЛОГ: Попередження про невдалий вхід
+        publishAudit(user, "WARN", "Невдала спроба входу. Спроба №" + user.getFailedLoginAttempts(), user.getUserId());
+
         // Якщо перевищено максимум спроб - блокуємо
         if (user.getFailedLoginAttempts() >= maxFailedAttempts) {
             user.setAccountLockedUntil(LocalDateTime.now().plusMinutes(lockDurationMinutes));
             log.error("Акаунт заблокований на {} хвилин: {}",
                 lockDurationMinutes,
                 user.getUsername());
+            //ЛОГ: КРИТИЧНО - Блокування акаунту (Brute-force protection)
+            publishAudit(user, "SECURITY", "АКАУНТ ЗАБЛОКОВАНО на " + lockDurationMinutes + " хв через перевищення ліміту спроб", user.getUserId());
         }
 
         userRepository.save(user);
@@ -82,6 +93,9 @@ public class AuthSecurityService {
 
         log.info("Успішний вхід: {}", user.getUsername());
         userRepository.save(user);
+
+        //ЛОГ: Успішна аутентифікація
+        publishAudit(user, "INFO", "Успішний вхід у систему", user.getUserId());
     }
 
     /**
@@ -105,6 +119,22 @@ public class AuthSecurityService {
         user.setPasswordChangedDate(LocalDateTime.now());
         userRepository.save(user);
         log.info("Пароль оновлений для: {}", user.getUsername());
+        // ЛОГ: Зміна пароля (Критична подія безпеки)
+        publishAudit(user, "SECURITY", "Користувач успішно змінив пароль", user.getUserId());
+    }
+
+    /**
+     * Допоміжний метод для надсилання подій аудиту
+     */
+    private void publishAudit(User user, String level, String message, Integer userId) {
+        eventPublisher.publishEvent(new AuditEvent(
+                this,
+                user,
+                level,
+                message,
+                "User", // Тип сутності
+                userId
+        ));
     }
 }
 

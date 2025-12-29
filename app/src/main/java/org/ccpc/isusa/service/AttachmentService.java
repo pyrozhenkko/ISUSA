@@ -2,16 +2,19 @@ package org.ccpc.isusa.service;
 
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.ccpc.isusa.dto.response.AttachmentResponseDto;
 import org.ccpc.isusa.entity.main.Application;
 import org.ccpc.isusa.entity.main.Attachment;
 import org.ccpc.isusa.entity.main.Student;
 import org.ccpc.isusa.entity.main.User;
+import org.ccpc.isusa.event.AuditEvent;
 import org.ccpc.isusa.mapper.AttachmentMapper;
 import org.ccpc.isusa.repository.main.ApplicationRepository;
 import org.ccpc.isusa.repository.main.AttachmentRepository;
 import org.ccpc.isusa.repository.main.StudentRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
@@ -26,6 +29,7 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AttachmentService {
@@ -34,6 +38,8 @@ public class AttachmentService {
     private final ApplicationRepository applicationRepository;
     private final StudentRepository studentRepository;
     private final AttachmentMapper attachmentMapper;
+
+    private final ApplicationEventPublisher eventPublisher;
 
     // Папка для збереження файлів (можна налаштувати в application.properties)
     @Value("${isusa.upload.dir:uploads}")
@@ -47,11 +53,17 @@ public class AttachmentService {
 
         // 2. Перевірка доступу до заявки
         Application app = applicationRepository.findByApplicationIdAndStudent(applicationId, student)
-                .orElseThrow(() -> new EntityNotFoundException("Заявку не знайдено або доступ заборонено"));
+                .orElseThrow(() -> {
+                    // ЛОГ: Спроба доступу до чужої заявки
+                    publishAudit(currentUser, "WARN", "Спроба додати файл до недоступної заявки ID: " + applicationId, "Application", applicationId);
+                    return new EntityNotFoundException("Заявку не знайдено або доступ заборонено");
+                });
 
         // 3. Перевірка статусу (можна додавати тільки до чернеток або нових)
         String status = app.getApplicationStatus().getStatusName();
         if (!"Чернетка".equals(status) && !"Нова".equals(status)) {
+            // ЛОГ: Помилка статусу
+            publishAudit(currentUser, "WARN", "Відмовлено у завантаженні файлу. Статус заявки: " + status, "Application", applicationId);
             throw new IllegalStateException("Не можна додавати файли до заявки в статусі: " + status);
         }
 
@@ -75,6 +87,8 @@ public class AttachmentService {
 
         Attachment savedAttachment = attachmentRepository.save(attachment);
 
+        //ЛОГ: Успішне завантаження
+        publishAudit(currentUser, "INFO", "Завантажено файл: " + file.getOriginalFilename(), "Attachment", savedAttachment.getAttachmentId());
         return attachmentMapper.toResponseDto(savedAttachment);
     }
 
@@ -87,13 +101,32 @@ public class AttachmentService {
 
         // Тут можна додати додаткову перевірку прав доступу, якщо потрібно
 
+        // 3. ЛОГ: Фіксуємо факт скачування (хто і що скачав)
+        publishAudit(currentUser, "INFO", "Скачано файл: " + attachment.getFileName(), "Attachment", attachmentId);
+
         Path filePath = Paths.get(attachment.getFilePath());
         Resource resource = new UrlResource(filePath.toUri());
 
         if (resource.exists() || resource.isReadable()) {
             return resource;
         } else {
+            publishAudit(currentUser, "ERROR", "Помилка читання файлу з диску: " + attachment.getFileName(), "Attachment", attachmentId);
             throw new RuntimeException("Не вдалося прочитати файл: " + attachment.getFileName());
         }
+
+    }
+
+    /**
+     * Допоміжний метод для надсилання подій аудиту
+     */
+    private void publishAudit(User user, String level, String message, String entityType, Integer entityId) {
+        eventPublisher.publishEvent(new AuditEvent(
+                this,
+                user,
+                level,
+                message,
+                entityType,
+                entityId
+        ));
     }
 }
