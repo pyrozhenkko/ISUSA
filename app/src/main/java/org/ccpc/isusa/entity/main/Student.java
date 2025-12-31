@@ -15,7 +15,7 @@ public class Student {
 
     @Id
     @Column(name = "StudentID")
-    private Integer studentId; // НЕ автоінкремент, згідно зі схемою (INT PRIMARY KEY)
+    private Integer studentId; // Cтудак
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "UserID", nullable = false, unique = true)
@@ -26,6 +26,8 @@ public class Student {
 
     @Column(name = "Specialty", length = 100)
     private String specialty;
+
+    // todo Додати рік вступу в університет і рік випуску
 
     @Column(name = "Faculty", length = 100)
     private String faculty;

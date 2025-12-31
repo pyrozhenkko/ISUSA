@@ -35,6 +35,8 @@ public class User implements UserDetails {
     @JoinColumn(name = "roleid", nullable = false)
     private Role role;
 
+    // todo add path image, дадати посаду для всіх ролів, якщо студік(Магістр, Бакалавр, Аспірант), дата народження
+
     @Column(name = "username", length = 100, nullable = false, unique = true)
     private String username;
     @Column(name = "failed_login_attempts")
@@ -52,6 +54,8 @@ public class User implements UserDetails {
     @Column(name = "password_hash", length = 256, nullable = false)
     private String passwordHash;
 
+
+    //  todo розбити поле на 3 поля ПІБ
     @Column(name = "full_name", length = 150)
     private String fullName;
 
