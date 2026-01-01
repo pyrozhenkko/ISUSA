@@ -15,7 +15,9 @@ public interface ApplicationHistoryMapper {
     @Mapping(source = "status.statusId", target = "statusId")
     @Mapping(source = "status.statusName", target = "statusName")
     @Mapping(source = "changedByUser.userId", target = "changedByUserId")
-    @Mapping(source = "changedByUser.fullName", target = "changedByUserName")
+    @Mapping(source = "changedByUser.firstName", target = "changedByUserFirstName")
+    @Mapping(source = "changedByUser.middleName", target = "changedByUserMiddleName")
+    @Mapping(source = "changedByUser.lastName", target = "changedByUserLastName")
     @Mapping(source = "changedByUser.role.roleName", target = "changedByRole")
     ApplicationHistoryResponseDto toDto(ApplicationHistory entity);
 

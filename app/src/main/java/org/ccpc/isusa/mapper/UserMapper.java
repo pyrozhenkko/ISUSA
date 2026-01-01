@@ -9,26 +9,33 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface UserMapper {
 
-    // --- З Entity -> в Response DTO ---
+    // === Entity -> Response DTO ===
     @Mapping(source = "role.roleName", target = "roleName")
     @Mapping(source = "student.studentId", target = "studentId")
-    // authorities немає в DTO, тому прибираємо згадку про нього (або залишаємо ignore=true, якщо DTO зміниться)
-    // MapStruct розумний: якщо поля немає в target, він його і так ігнорує,
-    // але для уникнення попереджень можна залишити.
-    // У вашому випадку помилка була в toUserEntity, а не тут.
+    @Mapping(source = "profileImageId.fileName", target = "profileImageFileName")
     UserResponseDto toResponseDto(User entity);
 
 
-    // --- З Request DTO -> в Entity ---
-    // Ігноруємо ВСЕ, що не приходить з форми реєстрації
+    // === Registration DTO -> Entity ===
+    @Mapping(source = "username", target = "username")
+    @Mapping(source = "email", target = "email")
 
-    // Системні поля
+    // === Ігноруємо ТІЛЬКИ те, що генерується автоматично або не приходить з фронту ===
     @Mapping(target = "userId", ignore = true)
     @Mapping(target = "role", ignore = true)
     @Mapping(target = "passwordHash", ignore = true)
+    @Mapping(target = "profileImageId", ignore = true)
+    @Mapping(target = "position", ignore = true)
     @Mapping(target = "isActive", ignore = true)
-
-    // Зв'язки
+    @Mapping(target = "isDeleted", ignore = true)
+    @Mapping(target = "deletedDate", ignore = true)
+    @Mapping(target = "createdDate", ignore = true)
+    @Mapping(target = "updatedDate", ignore = true)
+    @Mapping(target = "failedLoginAttempts", ignore = true)
+    @Mapping(target = "accountLockedUntil", ignore = true)
+    @Mapping(target = "lastLoginDate", ignore = true)
+    @Mapping(target = "passwordChangedDate", ignore = true)
+    @Mapping(target = "authorities", ignore = true)
     @Mapping(target = "student", ignore = true)
     @Mapping(target = "processedApplications", ignore = true)
     @Mapping(target = "comments", ignore = true)
@@ -36,20 +43,15 @@ public interface UserMapper {
     @Mapping(target = "changes", ignore = true)
     @Mapping(target = "logs", ignore = true)
 
-    // Soft Delete & Audit (НОВІ ПОЛЯ - ВИПРАВЛЕННЯ)
-    @Mapping(target = "isDeleted", ignore = true)
-    @Mapping(target = "deletedDate", ignore = true)
-    @Mapping(target = "createdDate", ignore = true)
-    @Mapping(target = "updatedDate", ignore = true)
+    // === EnrolledDate ===
+    // Залишаємо ignore, ТІЛЬКИ ЯКЩО в User.java є @PrePersist.
+    // Якщо немає - прибери ignore і передавай дату з сервісу.
+    @Mapping(target = "enrolledDate", ignore = true)
 
-    // Security / Brute-force protection (НОВІ ПОЛЯ - ВИПРАВЛЕННЯ)
-    @Mapping(target = "failedLoginAttempts", ignore = true)
-    @Mapping(target = "accountLockedUntil", ignore = true)
-    @Mapping(target = "lastLoginDate", ignore = true)
-    @Mapping(target = "passwordChangedDate", ignore = true)
+    // Я прибрав ігнор для phoneNumber, щоб він зберігався
+    @Mapping(target = "dateOfBirth", ignore = true)
 
-    // UserDetails (метод без сеттера)
-    // MapStruct може скаржитися на authorities, якщо сприймає його як властивість
-    @Mapping(target = "authorities", ignore = true)
+    // department, faculty, firstName, lastName, middleName, phoneNumber
+    // замапляться автоматично, бо імена полів збігаються.
     User toUserEntity(StudentRegistrationRequestDto dto);
 }
