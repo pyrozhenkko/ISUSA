@@ -19,6 +19,10 @@ public class ApplicationHistoryResponseDto {
     private String statusName;
     private Integer changedByUserId;
     private String changedByUserName;
+    private String changedByUserFirstName;
+    private String changedByUserMiddleName;
+    private String changedByUserLastName;
     private String changedByRole;
     private LocalDateTime changeTimestamp;
+
 }
