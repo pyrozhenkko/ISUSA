@@ -134,13 +134,19 @@ public class AdminService {
         User user = getUserOrThrow(userId);
 
         if (request.getFullName() != null && !request.getFullName().isBlank()) {
-            user.setFullName(request.getFullName());
+            String[] parts = request.getFullName().trim().split("\\s+", 3);
+
+            user.setLastName(parts[0]); // Прізвище
+            user.setFirstName(parts.length > 1 ? parts[1] : null); // Ім'я
+            user.setMiddleName(parts.length > 2 ? parts[2] : null); // По-батькові
         }
+
         if (request.getEmail() != null && !request.getEmail().isBlank()) {
             user.setEmail(request.getEmail());
         }
 
         User savedUser = userRepository.save(user);
+
         publishAudit(performer, "INFO", "Оновлено профіль користувача: " + savedUser.getUsername(), userId);
 
         return userMapper.toResponseDto(savedUser);
@@ -237,7 +243,13 @@ public class AdminService {
     private User createUserEntity(String username, String password, String fullName, String email, Role role) {
         User user = new User();
         user.setUsername(username);
-        user.setFullName(fullName);
+        if (fullName != null && !fullName.isBlank()) {
+            String[] parts = fullName.trim().split("\\s+", 3);
+
+            user.setLastName(parts[0]); // Прізвище
+            user.setFirstName(parts.length > 1 ? parts[1] : null); // Ім'я
+            user.setMiddleName(parts.length > 2 ? parts[2] : null); // По-батькові
+        }
         user.setEmail(email);
         user.setPasswordHash(passwordEncoder.encode(password));
         user.setIsActive(true);

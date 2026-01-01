@@ -1,20 +1,18 @@
 -- =================================================================
 -- 1. ПРАВА ДОСТУПУ (PERMISSIONS)
--- Визначаємо, що взагалі МОЖНА робити в системі.
 -- =================================================================
 INSERT INTO permissions (permission_name) VALUES
-                                              ('application:create'),       -- Створювати заявки
-                                              ('application:read_own'),     -- Читати ТІЛЬКИ свої заявки
-                                              ('application:read'),         -- Читати ВСІ заявки (для персоналу)
-                                              ('application:update_status'),-- Міняти статус (Деканат)
-                                              ('application:verify_sign'),  -- Перевіряти підпис
-                                              ('recommendation:create'),    -- Писати рекомендації (Викладач)
-                                              ('user:manage')               -- Створювати юзерів (Адмін)
+                                              ('application:create'),
+                                              ('application:read_own'),
+                                              ('application:read'),
+                                              ('application:update_status'),
+                                              ('application:verify_sign'),
+                                              ('recommendation:create'),
+                                              ('user:manage')
     ON CONFLICT (permission_name) DO NOTHING;
 
 -- =================================================================
 -- 2. РОЛІ (ROLES)
--- Основні посади в університеті.
 -- =================================================================
 INSERT INTO roles (role_name) VALUES
                                   ('STUDENT'),
@@ -25,11 +23,9 @@ INSERT INTO roles (role_name) VALUES
 
 -- =================================================================
 -- 3. ЗВ'ЯЗОК РОЛЕЙ ТА ПРАВ (ROLE_PERMISSIONS)
--- САМЕ ТУТ ми даємо студенту право читати свої заяви.
 -- =================================================================
 
--- === СТУДЕНТ (STUDENT) ===
--- Отримує право створювати (create) і читати свої (read_own)
+-- === СТУДЕНТ ===
 INSERT INTO role_permissions (roleid, permissionid)
 SELECT r.roleid, p.permissionid
 FROM roles r, permissions p
@@ -37,8 +33,7 @@ WHERE r.role_name = 'STUDENT'
   AND p.permission_name IN ('application:create', 'application:read_own')
     ON CONFLICT (roleid, permissionid) DO NOTHING;
 
--- === ВИКЛАДАЧ (TEACHER) ===
--- Читає всі, перевіряє підпис, пише рекомендації
+-- === ВИКЛАДАЧ ===
 INSERT INTO role_permissions (roleid, permissionid)
 SELECT r.roleid, p.permissionid
 FROM roles r, permissions p
@@ -46,8 +41,7 @@ WHERE r.role_name = 'TEACHER'
   AND p.permission_name IN ('application:read', 'application:verify_sign', 'recommendation:create')
     ON CONFLICT (roleid, permissionid) DO NOTHING;
 
--- === ДЕКАНАТ (DEANERY_STAFF) ===
--- Читає всі, змінює статус, перевіряє підпис
+-- === ДЕКАНАТ ===
 INSERT INTO role_permissions (roleid, permissionid)
 SELECT r.roleid, p.permissionid
 FROM roles r, permissions p
@@ -55,8 +49,7 @@ WHERE r.role_name = 'DEANERY_STAFF'
   AND p.permission_name IN ('application:read', 'application:update_status', 'application:verify_sign')
     ON CONFLICT (roleid, permissionid) DO NOTHING;
 
--- === АДМІН (ADMIN) ===
--- Має права на все, плюс керування юзерами
+-- === АДМІН ===
 INSERT INTO role_permissions (roleid, permissionid)
 SELECT r.roleid, p.permissionid
 FROM roles r, permissions p
@@ -65,10 +58,9 @@ WHERE r.role_name = 'ADMIN'
 
 -- =================================================================
 -- 4. СТАТУСИ ЗАЯВОК (APPLICATION_STATUS)
--- ВАЖЛИВО: Додано "Чернетка"!
 -- =================================================================
 INSERT INTO application_status (status_name) VALUES
-                                                 ('Чернетка'),                -- ← ДОДАНО! Потрібно для createDraft
+                                                 ('Чернетка'),
                                                  ('Нова'),
                                                  ('На розгляді'),
                                                  ('Потребує уточнення'),
@@ -91,42 +83,97 @@ INSERT INTO application_type (type_name, description) VALUES
 
 -- =================================================================
 -- 6. СТВОРЕННЯ СУПЕР-АДМІНА
--- Логін: admin / Пароль: adminpass
--- Хеш згенеровано BCrypt для пароля "adminpass"
 -- =================================================================
-INSERT INTO users (roleid, username, password_hash, full_name, email, is_active)
+INSERT INTO users (
+    roleid,
+    username,
+    password_hash,
+    -- full_name ПРИБРАНО
+    first_name,
+    middle_name,
+    last_name,
+    email,
+    phone_number,
+    date_of_birth,
+    faculty,
+    department,
+    position,
+    enrolled_date,
+    is_active,
+    is_deleted,
+    failed_login_attempts
+)
 VALUES (
            (SELECT roleid FROM roles WHERE role_name = 'ADMIN'),
            'admin',
-           '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', -- adminpass
-           'Головний Адміністратор',
+           '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
+           -- Значення 'Петренко Олександр Миколайович' ПРИБРАНО
+           'Олександр',
+           'Миколайович',
+           'Петренко',
            'admin@university.edu',
-           TRUE
+           '+380501111111',
+           '1980-01-15'::timestamp,
+           'Адміністрація',
+           'Відділ інформаційних технологій',
+           'Системний адміністратор',
+           '2010-09-01'::timestamp,
+           TRUE,
+           FALSE,
+           0
        )
     ON CONFLICT (username) DO NOTHING;
 
 -- =================================================================
 -- 7. СТВОРЕННЯ ТЕСТОВОГО СТУДЕНТА
--- Логін: student / Пароль: student123
 -- =================================================================
-INSERT INTO users (roleid, username, password_hash, full_name, email, is_active)
+INSERT INTO users (
+    roleid,
+    username,
+    password_hash,
+    -- full_name ПРИБРАНО
+    first_name,
+    middle_name,
+    last_name,
+    email,
+    phone_number,
+    date_of_birth,
+    faculty,
+    department,
+    position,
+    enrolled_date,
+    is_active,
+    is_deleted,
+    failed_login_attempts
+)
 VALUES (
            (SELECT roleid FROM roles WHERE role_name = 'STUDENT'),
            'student',
-           '$2a$10$rVvSmxxWDXHfnlmWHVV7qOcpnwXN.ksKGgxvPJTQW.5z8LBq8K7Xa', -- student123
-           'Іван Іваненко',
+           '$2a$10$rVvSmxxWDXHfnlmWHVV7qOcpnwXN.ksKGgxvPJTQW.5z8LBq8K7Xa',
+           -- Значення 'Іваненко Іван Петрович' ПРИБРАНО
+           'Іван',
+           'Петрович',
+           'Іваненко',
            'student@university.edu',
-           TRUE
+           '+380501234567',
+           '2004-05-15'::timestamp,
+           'Факультет Інформаційних Технологій',
+           'Кафедра програмної інженерії',
+           'Студент',
+           '2021-09-01'::timestamp,
+           TRUE,
+           FALSE,
+           0
        )
     ON CONFLICT (username) DO NOTHING;
 
 -- Додати студента до таблиці students
-INSERT INTO students (studentid, userid, faculty, specialty, groupid)
+INSERT INTO students (studentid, userid, specialty, groupid, year_of_study)
 VALUES (
            (SELECT userid FROM users WHERE username = 'student'),
            (SELECT userid FROM users WHERE username = 'student'),
-           'Факультет Інформаційних Технологій',
            'Програмна Інженерія',
-           'ПІ-21'
+           'ПІ-21',
+           2
        )
     ON CONFLICT (userid) DO NOTHING;
