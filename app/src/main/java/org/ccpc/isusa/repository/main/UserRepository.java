@@ -1,6 +1,7 @@
 package org.ccpc.isusa.repository.main;
 
 import org.ccpc.isusa.entity.main.Role;
+import org.ccpc.isusa.entity.main.Student;
 import org.ccpc.isusa.entity.main.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -27,6 +28,7 @@ public interface UserRepository extends JpaRepository<User, Integer> {
     boolean existsByStudentStudentId(Integer studentId);
 
     List<User> findByRole(Role role);
+    List<User> findByFaculty(String faculty);
 
     // === SOFT-DELETE МЕТОДИ ===
 
