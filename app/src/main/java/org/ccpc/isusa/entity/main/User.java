@@ -35,7 +35,14 @@ public class User implements UserDetails {
     @JoinColumn(name = "roleid", nullable = false)
     private Role role;
 
-    // todo add path image, дадати посаду для всіх ролів, якщо студік(Магістр, Бакалавр, Аспірант), дата народження
+    @ManyToOne
+    @JoinColumn(name = "profile_imaget_id")
+    private Attachment profileImageId;
+    @Column(name = "position", length = 100)
+    private String position;
+
+    @Column(name = "date_of_birth")
+    private LocalDateTime dateOfBirth;
 
     @Column(name = "username", length = 100, nullable = false, unique = true)
     private String username;
@@ -54,12 +61,29 @@ public class User implements UserDetails {
     @Column(name = "password_hash", length = 256, nullable = false)
     private String passwordHash;
 
+    @Column(name  = "first_name", length = 50)
+    private String firstName;
 
-    //  todo розбити поле на 3 поля ПІБ
-    @Column(name = "full_name", length = 150)
-    private String fullName;
+    @Column(name  = "middle_name", length = 50)
+    private String middleName;
 
-    @Column(name = "email", length = 100, unique = true)
+    @Column(name  = "last_name", length = 50)
+    private String lastName;
+
+
+    @Column(name = "phone_number", length = 20)
+    private String phoneNumber = "N/A";
+
+    @Column(name = "faculty", length = 100, nullable = false)
+    private String faculty;
+
+    @Column( name = "department", length = 100, nullable = false)
+    private String department;
+
+    @Column (name = "enrolled_date")
+    private LocalDateTime enrolledDate;
+
+    @Column(name = "email", length = 100, unique = true, nullable = false)
     private String email;
 
     @Column(name = "is_active")
@@ -80,11 +104,7 @@ public class User implements UserDetails {
     @Column(name = "updated_date")
     private LocalDateTime updatedDate;
 
-    // === ЗВ'ЯЗКИ ===
 
-    // === РУЧНІ ГЕТТЕРИ/СЕТТЕРИ ДЛЯ STUDENT (FIX) ===
-    // Додаємо їх, щоб MapStruct точно їх побачив
-    // (MapStruct не бачив це поле, тому додамо геттер вручну нижче)
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Student student;
 

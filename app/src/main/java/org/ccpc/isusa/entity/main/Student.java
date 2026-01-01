@@ -27,10 +27,8 @@ public class Student {
     @Column(name = "Specialty", length = 100)
     private String specialty;
 
-    // todo Додати рік вступу в університет і рік випуску
-
-    @Column(name = "Faculty", length = 100)
-    private String faculty;
+    @Column(name = "YearOfStudy")
+    private Integer yearOfStudy;
 
     @OneToMany(mappedBy = "student", fetch = FetchType.LAZY)
     private Set<Application> applications;
