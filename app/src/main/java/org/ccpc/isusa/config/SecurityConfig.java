@@ -1,7 +1,9 @@
 package org.ccpc.isusa.config;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -9,16 +11,15 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import lombok.RequiredArgsConstructor;
+import java.util.List;
 
-/**
- * Головний конфігураційний файл Spring Security.
- * Тут ми вмикаємо фільтри і визначаємо, які URL є публічними, а які - захищеними.
- */
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity // Дозволяє використовувати @PreAuthorize("hasRole('ADMIN')")
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
@@ -28,27 +29,29 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // 1. Вимикаємо CSRF (стандартно для stateless API, що використовують токени)
                 .csrf(csrf -> csrf.disable())
-
-                // 2. Налаштовуємо правила доступу до URL
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
-                        // Дозволяємо доступ до /api/auth/** (реєстрація, логін) для всіх
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
-                        // Будь-який інший запит вимагає автентифікації
                         .anyRequest().authenticated()
                 )
-
-                // 3. Налаштовуємо управління сесіями - STATELESS (без сесій)
-                // Ми використовуємо JWT, тому сервер не повинен зберігати сесії
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
-                // 4. Підключаємо наш провайдер (з ApplicationConfig)
                 .authenticationProvider(authenticationProvider)
-
-                // 5. Додаємо наш JWT-фільтр ПЕРЕД стандартним фільтром Spring
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        configuration.setAllowCredentials(true);
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 }
