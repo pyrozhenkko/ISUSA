@@ -37,7 +37,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ element, isAuthenticate
 
 
 const App = () => {
-    const IS_TESTING_MODE = false; 
+    const IS_TESTING_MODE = true; 
 
     const initialToken = localStorage.getItem('authToken');
     const initialRole = localStorage.getItem('userRole') as UserRole | null;

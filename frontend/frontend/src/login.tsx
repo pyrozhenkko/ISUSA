@@ -8,19 +8,19 @@ interface LoginPageProps {
 }
 
 // Припускаємо, що API реєстрації знаходиться на /api/auth/register
-const LOGIN_API_URL = 'http://localhost:8080/api/auth/login';
-const REGISTER_API_URL = 'http://localhost:8080/api/auth/register';
+const LOGIN_API_URL = 'http://localhost:8081/api/auth/login';
+const REGISTER_API_URL = 'http://localhost:8081/api/auth/register';
 
 const AuthPage: React.FC<LoginPageProps> = ({ handleLogin }) => {
     // Стан для форми
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
-    const [email, setEmail] = useState(''); // Додано для реєстрації
+    const [email, setEmail] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     
     // Стан для перемикання між режимами
-    const [isLoginMode, setIsLoginMode] = useState(true); // true = Вхід, false = Реєстрація
+    const [isLoginMode, setIsLoginMode] = useState(true);
 
     const navigate = useNavigate();
 
@@ -52,7 +52,7 @@ const AuthPage: React.FC<LoginPageProps> = ({ handleLogin }) => {
         // 2. Підготовка payload
         const payload = isLoginMode
             ? { username, password } // Login
-            : { username, password, email }; // Registration (залежить від DTO на бекенді)
+            : { username, password, email };
 
         try {
             const response = await fetch(apiEndpoint, {
@@ -70,13 +70,10 @@ const AuthPage: React.FC<LoginPageProps> = ({ handleLogin }) => {
                     handleLogin(data.token, data.user); 
                     navigate('/account');
                 } else {
-                    // Успішна реєстрація
-                    // Можемо одразу увійти або попросити увійти
                     setError('Реєстрація успішна! Спробуйте увійти, використовуючи Ваші дані.');
-                    setIsLoginMode(true); // Перемикаємо на режим входу
+                    setIsLoginMode(true);
                 }
             } else {
-                // Обробка помилок
                 const errorData = await response.json().catch(() => ({ message: 'Помилка' }));
                 
                 if (response.status === 401) {
