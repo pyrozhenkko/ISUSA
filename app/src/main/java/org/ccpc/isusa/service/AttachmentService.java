@@ -65,14 +65,14 @@ public class AttachmentService {
             throw new IllegalStateException("Файл перевищує допустимий розмір (10 MB)");
         }
 
-        // ✅ Безпечні розширення
+        //  Безпечні розширення
         Set<String> allowedExtensions = Set.of(
                 "pdf","doc","docx","odt","rtf","txt",
                 "xls","xlsx","ods","ppt","pptx",
                 "jpg","jpeg","png","zip"
         );
 
-        // ✅ Безпечні MIME-типи
+        //  Безпечні MIME-типи
         Set<String> allowedMimeTypes = Set.of(
                 "application/pdf",
                 "application/msword",
@@ -204,6 +204,30 @@ public class AttachmentService {
         } else {
             throw new RuntimeException("Файл не знайдено на диску");
         }
+    }
+
+    /**
+     * Завантаження файлу як ресурсу для скачування.
+     */
+    public Resource loadFileAsResource(Integer attachmentId, User currentUser) throws MalformedURLException {
+        Attachment attachment = attachmentRepository.findById(attachmentId)
+                .orElseThrow(() -> new EntityNotFoundException("Вкладення не знайдено"));
+
+        // Тут можна додати додаткову перевірку прав доступу, якщо потрібно
+
+        // 3. ЛОГ: Фіксуємо факт скачування (хто і що скачав)
+        publishAudit(currentUser, "INFO", "Скачано файл: " + attachment.getFileName(), "Attachment", attachmentId);
+
+        Path filePath = Paths.get(attachment.getFilePath());
+        Resource resource = new UrlResource(filePath.toUri());
+
+        if (resource.exists() || resource.isReadable()) {
+            return resource;
+        } else {
+            publishAudit(currentUser, "ERROR", "Помилка читання файлу з диску: " + attachment.getFileName(), "Attachment", attachmentId);
+            throw new RuntimeException("Не вдалося прочитати файл: " + attachment.getFileName());
+        }
+
     }
 
     /**
