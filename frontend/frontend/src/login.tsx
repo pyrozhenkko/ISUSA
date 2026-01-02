@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { User, Lock, Mail, ArrowRight, Zap, Loader2 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
-// Інтерфейс для пропсів, отриманих від App.tsx
 interface LoginPageProps {
     handleLogin: (token: string, userData: any) => void;
 }
