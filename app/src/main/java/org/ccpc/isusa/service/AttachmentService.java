@@ -27,7 +27,9 @@ import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
+import java.util.Set;
 import java.util.UUID;
 
 @Slf4j
@@ -49,29 +51,83 @@ public class AttachmentService {
     private String uploadDir;
 
     @Transactional
-    public AttachmentResponseDto addAttachment(Integer applicationId, MultipartFile file, User currentUser) throws IOException {
+    public AttachmentResponseDto addAttachment(Integer applicationId,
+                                               MultipartFile file,
+                                               User currentUser) throws IOException {
+
+        // 0. Базові перевірки
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Файл не передано");
+        }
+
+        long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+        if (file.getSize() > MAX_FILE_SIZE) {
+            throw new IllegalStateException("Файл перевищує допустимий розмір (10 MB)");
+        }
+
+        // ✅ Безпечні розширення
+        Set<String> allowedExtensions = Set.of(
+                "pdf","doc","docx","odt","rtf","txt",
+                "xls","xlsx","ods","ppt","pptx",
+                "jpg","jpeg","png","zip"
+        );
+
+        // ✅ Безпечні MIME-типи
+        Set<String> allowedMimeTypes = Set.of(
+                "application/pdf",
+                "application/msword",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "application/vnd.ms-excel",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "application/vnd.ms-powerpoint",
+                "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                "image/jpeg",
+                "image/png",
+                "application/zip",
+                "text/plain"
+        );
+
+        String originalFileName = file.getOriginalFilename();
+        String contentType = file.getContentType();
+
+        if (originalFileName == null || !originalFileName.contains(".")) {
+            throw new IllegalArgumentException("Некоректна назва файлу");
+        }
+
+        String extension = originalFileName.substring(originalFileName.lastIndexOf('.') + 1).toLowerCase();
+
+        if (!allowedExtensions.contains(extension) || !allowedMimeTypes.contains(contentType)) {
+            publishAudit(currentUser, "WARN",
+                    "Спроба завантаження забороненого файлу: " + originalFileName,
+                    "Attachment", null);
+            throw new IllegalArgumentException("Недозволений тип файлу");
+        }
+
         // 1. Перевірка, чи користувач є студентом
         Student student = studentRepository.findByUser(currentUser)
                 .orElseThrow(() -> new RuntimeException("Ви не є студентом!"));
 
         // 2. Перевірка доступу до заявки
-        Application app = applicationRepository.findByApplicationIdAndStudent(applicationId, student)
+        Application app = applicationRepository
+                .findByApplicationIdAndStudent(applicationId, student)
                 .orElseThrow(() -> {
-                    // ЛОГ: Спроба доступу до чужої заявки
-                    publishAudit(currentUser, "WARN", "Спроба додати файл до недоступної заявки ID: " + applicationId, "Application", applicationId);
+                    publishAudit(currentUser, "WARN",
+                            "Спроба доступу до чужої заявки ID: " + applicationId,
+                            "Application", applicationId);
                     return new EntityNotFoundException("Заявку не знайдено або доступ заборонено");
                 });
 
-        // 3. Перевірка статусу (можна додавати тільки до чернеток або нових)
+        // 3. Перевірка статусу заявки
         String status = app.getApplicationStatus().getStatusName();
         if (!"Чернетка".equals(status) && !"Нова".equals(status)) {
-            // ЛОГ: Помилка статусу
-            publishAudit(currentUser, "WARN", "Відмовлено у завантаженні файлу. Статус заявки: " + status, "Application", applicationId);
+            publishAudit(currentUser, "WARN",
+                    "Відмовлено у завантаженні файлу. Статус: " + status,
+                    "Application", applicationId);
             throw new IllegalStateException("Не можна додавати файли до заявки в статусі: " + status);
         }
 
         // 4. Збереження файлу на диск
-        String uniqueFileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
+        String uniqueFileName = UUID.randomUUID() + "_" + originalFileName;
         Path uploadPath = Paths.get(uploadDir);
 
         if (!Files.exists(uploadPath)) {
@@ -79,45 +135,25 @@ public class AttachmentService {
         }
 
         Path filePath = uploadPath.resolve(uniqueFileName);
-        Files.copy(file.getInputStream(), filePath);
+        Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
         // 5. Збереження в БД
         Attachment attachment = new Attachment();
         attachment.setApplication(app);
-        attachment.setFileName(file.getOriginalFilename());
+        attachment.setFileName(originalFileName);
         attachment.setFilePath(filePath.toString());
         attachment.setUploadedDate(LocalDateTime.now());
 
         Attachment savedAttachment = attachmentRepository.save(attachment);
 
-        //ЛОГ: Успішне завантаження
-        publishAudit(currentUser, "INFO", "Завантажено файл: " + file.getOriginalFilename(), "Attachment", savedAttachment.getAttachmentId());
+        // 6. Audit log
+        publishAudit(currentUser, "INFO",
+                "Завантажено файл: " + originalFileName,
+                "Attachment", savedAttachment.getAttachmentId());
+
         return attachmentMapper.toResponseDto(savedAttachment);
     }
 
-    /**
-     * Завантаження файлу як ресурсу для скачування.
-     */
-    public Resource loadFileAsResource(Integer attachmentId, User currentUser) throws MalformedURLException {
-        Attachment attachment = attachmentRepository.findById(attachmentId)
-                .orElseThrow(() -> new EntityNotFoundException("Вкладення не знайдено"));
-
-        // Тут можна додати додаткову перевірку прав доступу, якщо потрібно
-
-        // 3. ЛОГ: Фіксуємо факт скачування (хто і що скачав)
-        publishAudit(currentUser, "INFO", "Скачано файл: " + attachment.getFileName(), "Attachment", attachmentId);
-
-        Path filePath = Paths.get(attachment.getFilePath());
-        Resource resource = new UrlResource(filePath.toUri());
-
-        if (resource.exists() || resource.isReadable()) {
-            return resource;
-        } else {
-            publishAudit(currentUser, "ERROR", "Помилка читання файлу з диску: " + attachment.getFileName(), "Attachment", attachmentId);
-            throw new RuntimeException("Не вдалося прочитати файл: " + attachment.getFileName());
-        }
-
-    }
 
     @Transactional
     public AttachmentResponseDto uploadUserProfileImage(MultipartFile file, User currentUser) throws IOException {
