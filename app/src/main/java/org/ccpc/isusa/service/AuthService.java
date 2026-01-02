@@ -3,12 +3,14 @@ package org.ccpc.isusa.service;
 import org.ccpc.isusa.dto.request.LoginRequestDto;
 import org.ccpc.isusa.dto.request.StudentRegistrationRequestDto;
 import org.ccpc.isusa.dto.response.LoginResponseDto;
+import org.ccpc.isusa.entity.main.PasswordResetToken;
 import org.ccpc.isusa.entity.main.Role;
 import org.ccpc.isusa.entity.main.Student;
 import org.ccpc.isusa.entity.main.User;
 import org.ccpc.isusa.exception.RegistrationException;
 import org.ccpc.isusa.mapper.StudentMapper;
 import org.ccpc.isusa.mapper.UserMapper;
+import org.ccpc.isusa.repository.main.PasswordResetTokenRepository;
 import org.ccpc.isusa.repository.main.RoleRepository;
 import org.ccpc.isusa.repository.main.StudentRepository;
 import org.ccpc.isusa.repository.main.UserRepository;
@@ -20,6 +22,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 /**
  * "Мозок" для всієї логіки, пов'язаної з реєстрацією та входом.
@@ -33,6 +38,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final StudentRepository studentRepository;
+    private final PasswordResetTokenRepository tokenRepository;
 
     // Маппери для конвертації DTO <-> Entity
     private final UserMapper userMapper;
@@ -47,6 +53,9 @@ public class AuthService {
 
     // Сервіс для безпеки аутентифікації
     private final AuthSecurityService authSecurityService;
+
+    // Сервіс для скидання пароля
+    private final EmailService emailService;
 
     // Роль за замовчуванням (з application.properties)
     @Value("${isusa.default-student-role-name}")
@@ -153,5 +162,45 @@ public class AuthService {
         return new LoginResponseDto(jwtToken, userMapper.toResponseDto(user));
     }
 
+
+    @Transactional
+    public void processForgotPassword(String email) {
+        // 1. Шукаємо юзера за email
+        User user = userRepository.findByEmailAndNotDeleted(email)
+                .orElseThrow(() -> new RuntimeException("Користувача з такою поштою не знайдено"));
+
+        // 2. Видаляємо старі токени цього юзера, якщо вони були
+        tokenRepository.deleteByUser(user);
+
+        // 3. Генеруємо новий токен
+        String token = UUID.randomUUID().toString();
+        PasswordResetToken resetToken = new PasswordResetToken(token, user);
+        tokenRepository.save(resetToken);
+
+        // 4. Відправляємо лист
+        emailService.sendPasswordResetEmail(user.getEmail(), token);
+    }
+
+    @Transactional
+    public void resetPassword(String token, String newPassword) {
+        // 1. Перевіряємо токен
+        PasswordResetToken resetToken = tokenRepository.findByToken(token)
+                .orElseThrow(() -> new RuntimeException("Невірний або недійсний токен"));
+
+        // 2. Перевіряємо термін дії
+        if (resetToken.isExpired()) {
+            tokenRepository.delete(resetToken);
+            throw new RuntimeException("Термін дії токена вичерпано");
+        }
+
+        // 3. Оновлюємо пароль юзера
+        User user = resetToken.getUser();
+        user.setPasswordHash(passwordEncoder.encode(newPassword)); // Використовуємо твій BCrypt
+        user.setPasswordChangedDate(LocalDateTime.now());
+        userRepository.save(user);
+
+        // 4. Видаляємо використаний токен
+        tokenRepository.delete(resetToken);
+    }
 
 }

@@ -49,4 +49,28 @@ public class EmailService {
             // якщо просто впав поштовий сервер.
         }
     }
+
+    @Async
+    public void sendPasswordResetEmail(String toEmail, String token) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(toEmail);
+            message.setSubject("ISUSA: Відновлення пароля");
+
+            // Посилання на твій фронтенд (наприклад, React на порту 5173)
+            String resetLink = "http://localhost:5173/reset-password?token=" + token;
+
+            String body = "Ви затребували відновлення пароля.\n\n" +
+                    "Для встановлення нового пароля перейдіть за посиланням:\n" +
+                    resetLink + "\n\n" +
+                    "Це посилання дійсне 15 хвилин. Якщо ви цього не робили, просто ігноруйте цей лист.";
+
+            message.setText(body);
+            mailSender.send(message);
+            log.info("Reset email sent to {}", toEmail);
+        } catch (Exception e) {
+            log.error("Failed to send reset email to {}", toEmail, e);
+        }
+    }
 }
