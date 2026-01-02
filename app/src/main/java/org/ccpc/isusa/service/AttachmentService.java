@@ -151,6 +151,26 @@ public class AttachmentService {
 
         return attachmentMapper.toResponseDto(savedAttachment);
     }
+    public Resource loadFileAsResource(Integer attachmentId, User currentUser) throws MalformedURLException {
+        Attachment attachment = attachmentRepository.findById(attachmentId)
+                .orElseThrow(() -> new EntityNotFoundException("Вкладення не знайдено"));
+
+        // Тут можна додати додаткову перевірку прав доступу, якщо потрібно
+
+        // 3. ЛОГ: Фіксуємо факт скачування (хто і що скачав)
+        publishAudit(currentUser, "INFO", "Скачано файл: " + attachment.getFileName(), "Attachment", attachmentId);
+
+        Path filePath = Paths.get(attachment.getFilePath());
+        Resource resource = new UrlResource(filePath.toUri());
+
+        if (resource.exists() || resource.isReadable()) {
+            return resource;
+        } else {
+            publishAudit(currentUser, "ERROR", "Помилка читання файлу з диску: " + attachment.getFileName(), "Attachment", attachmentId);
+            throw new RuntimeException("Не вдалося прочитати файл: " + attachment.getFileName());
+        }
+
+    }
 
 
     @Transactional
