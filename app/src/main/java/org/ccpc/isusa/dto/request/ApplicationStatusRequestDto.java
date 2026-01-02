@@ -11,4 +11,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ApplicationStatusRequestDto {
     private String statusName;
+
 }

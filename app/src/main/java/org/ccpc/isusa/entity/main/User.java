@@ -124,7 +124,26 @@ public class User implements UserDetails {
     private Set<Log> logs;
 
     // === UserDetails ===
+    @Transient
+    public String getFullName() {
+        StringBuilder fullName = new StringBuilder();
 
+        if (lastName != null && !lastName.isBlank()) {
+            fullName.append(lastName);
+        }
+
+        if (firstName != null && !firstName.isBlank()) {
+            if (fullName.length() > 0) fullName.append(" ");
+            fullName.append(firstName);
+        }
+
+        if (middleName != null && !middleName.isBlank()) {
+            if (fullName.length() > 0) fullName.append(" ");
+            fullName.append(middleName);
+        }
+
+        return fullName.toString().trim();
+    }
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return this.role.getPermissions().stream()

@@ -14,6 +14,7 @@ import org.ccpc.isusa.event.AuditEvent;
 import org.ccpc.isusa.mapper.ApplicationMapper;
 import org.ccpc.isusa.mapper.ApplicationTypeMapper;
 import org.ccpc.isusa.repository.main.*;
+import org.ccpc.isusa.service.EmailService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -21,6 +22,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -37,15 +39,12 @@ public class ApplicationService {
     private final ApplicationStatusRepository statusRepository;
     private final ApplicationHistoryRepository historyRepository;
     private final StudentRepository studentRepository;
-
+    private final EmailService emailService;
     private final SignatureService signatureService;
     private final AuthenticationManager authenticationManager;
     private final ApplicationMapper applicationMapper;
     private final ApplicationTypeMapper applicationTypeMapper;
-
-    // ДОДАНО: Сервіс для роботи з файлами (необхідний для signAndSubmitWithPhoto)
     private final AttachmentService attachmentService;
-
     private final ApplicationEventPublisher eventPublisher;
 
     // =================================================================================
@@ -157,6 +156,7 @@ public class ApplicationService {
         return applicationMapper.toResponseDto(applicationRepository.save(app));
     }
 
+
     /**
      * 3. Видалення ЧЕРНЕТКИ.
      */
@@ -241,27 +241,6 @@ public class ApplicationService {
                 .orElseThrow(() -> new EntityNotFoundException("Заявку не знайдено")));
     }
 
-    @Transactional
-    public ApplicationResponseDto updateApplicationStatus(Integer id, ApplicationStatusUpdateDto dto, User user) {
-        Application app = applicationRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("Заявка не знайдена"));
-        ApplicationStatus status = statusRepository.findById(dto.getStatusId()).orElseThrow(() -> new EntityNotFoundException("Статус не знайдено"));
-
-        ApplicationHistory history = new ApplicationHistory();
-        history.setApplication(app);
-        history.setStatus(status);
-        history.setChangedByUser(user);
-        history.setChangeTimestamp(LocalDateTime.now());
-        historyRepository.save(history);
-
-        app.setApplicationStatus(status);
-        app.setProcessedByUser(user);
-        app.setUpdatedDate(LocalDateTime.now());
-
-        publishAudit(user, "INFO", "Змінено статус заявки на: " + status.getStatusName(), id);
-
-        return applicationMapper.toResponseDto(applicationRepository.save(app));
-    }
-
     /**
      * (ВИКЛАДАЧ) Додавання рекомендації до заявки.
      */
@@ -333,6 +312,55 @@ public class ApplicationService {
     private ApplicationStatus getStatusOrThrow(String statusName) {
         return statusRepository.findByStatusName(statusName)
                 .orElseThrow(() -> new RuntimeException("Статус '" + statusName + "' не знайдено"));
+    }
+
+
+    @Transactional
+    public ApplicationResponseDto updateApplicationStatus(Integer id, ApplicationStatusUpdateDto dto, User user) {
+        Application app = applicationRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Заявка не знайдена"));
+
+        ApplicationStatus status = statusRepository.findById(dto.getStatusId())
+                .orElseThrow(() -> new EntityNotFoundException("Статус не знайдено"));
+
+        // Зберігаємо історію зміни статусу
+        ApplicationHistory history = new ApplicationHistory();
+        history.setApplication(app);
+        history.setStatus(status);
+        history.setChangedByUser(user);
+        history.setChangeTimestamp(LocalDateTime.now());
+        historyRepository.save(history);
+
+        // Оновлюємо заявку
+        app.setApplicationStatus(status);
+        app.setProcessedByUser(user);
+        app.setUpdatedDate(LocalDateTime.now());
+
+        Application savedApp = applicationRepository.save(app);
+
+        // Логування
+        publishAudit(user, "INFO", "Змінено статус заявки на: " + status.getStatusName(), id);
+
+        // ========== ВІДПРАВКА EMAIL СТУДЕНТУ ==========
+        try {
+            User student = app.getStudent().getUser();
+
+            emailService.sendStatusChangeNotification(
+                    student.getEmail(),
+                    student.getFullName(),
+                    app.getTitle(),
+                    status.getStatusName(),
+                    dto.getComment() // Коментар від персоналу
+            );
+
+            log.info("Status change notification sent to {} for application {}",
+                    student.getEmail(), id);
+        } catch (Exception e) {
+            log.error("Failed to send status change notification for application {}", id, e);
+            // Не кидаємо помилку, щоб не відкатити транзакцію
+        }
+
+        return applicationMapper.toResponseDto(savedApp);
     }
 
 }

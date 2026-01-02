@@ -11,4 +11,6 @@ public class ApplicationStatusUpdateDto {
 
     @NotNull(message = "ID нового статусу є обов'язковим")
     private Integer statusId;
+    private String comment;
+
 }
