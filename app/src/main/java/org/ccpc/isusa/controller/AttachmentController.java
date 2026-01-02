@@ -66,4 +66,38 @@ public class AttachmentController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Файл не знайдено або доступ заборонено", e);
         }
     }
+
+    /**
+     * Завантажити фото профілю для поточного користувача.
+     */
+    @PostMapping(value = "/profile-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<AttachmentResponseDto> uploadProfileImage(
+            @RequestParam("file") MultipartFile file,
+            @AuthenticationPrincipal User currentUser
+    ) {
+        try {
+            return ResponseEntity.ok(attachmentService.uploadUserProfileImage(file, currentUser));
+        } catch (IOException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Помилка збереження файлу");
+        }
+    }
+
+    @GetMapping("/profile-image/{userId}")
+    @PreAuthorize("permitAll()") // Можна дозволити всім бачити фото, або залишити isAuthenticated()
+    public ResponseEntity<Resource> viewProfileImage(@PathVariable Integer userId) {
+        try {
+            Resource resource = attachmentService.getUserProfileImage(userId);
+
+            // Визначаємо MIME-тип (image/jpeg, image/png тощо)
+            String contentType = "image/jpeg"; // Можна зробити динамічно через Files.probeContentType
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    // Тут ми НЕ додаємо Content-Disposition: attachment, щоб картинка відкрилася в браузері
+                    .body(resource);
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }

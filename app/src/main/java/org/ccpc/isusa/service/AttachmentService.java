@@ -13,6 +13,7 @@ import org.ccpc.isusa.mapper.AttachmentMapper;
 import org.ccpc.isusa.repository.main.ApplicationRepository;
 import org.ccpc.isusa.repository.main.AttachmentRepository;
 import org.ccpc.isusa.repository.main.StudentRepository;
+import org.ccpc.isusa.repository.main.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.io.Resource;
@@ -38,8 +39,10 @@ public class AttachmentService {
     private final ApplicationRepository applicationRepository;
     private final StudentRepository studentRepository;
     private final AttachmentMapper attachmentMapper;
+    private final UserRepository userRepository;
 
     private final ApplicationEventPublisher eventPublisher;
+
 
     // Папка для збереження файлів (можна налаштувати в application.properties)
     @Value("${isusa.upload.dir:uploads}")
@@ -114,6 +117,57 @@ public class AttachmentService {
             throw new RuntimeException("Не вдалося прочитати файл: " + attachment.getFileName());
         }
 
+    }
+
+    @Transactional
+    public AttachmentResponseDto uploadUserProfileImage(MultipartFile file, User currentUser) throws IOException {
+        // 1. Зберігаємо файл на диск
+        String uniqueFileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
+        Path uploadPath = Paths.get(uploadDir, "profiles"); // Можна створити окрему підпапку
+
+        if (!Files.exists(uploadPath)) {
+            Files.createDirectories(uploadPath);
+        }
+
+        Path filePath = uploadPath.resolve(uniqueFileName);
+        Files.copy(file.getInputStream(), filePath);
+
+        // 2. Створюємо запис Attachment
+        Attachment attachment = new Attachment();
+        attachment.setApplication(null); // Для профілю заявка не потрібна
+        attachment.setFileName(file.getOriginalFilename());
+        attachment.setFilePath(filePath.toString());
+        attachment.setUploadedDate(LocalDateTime.now());
+        Attachment savedAttachment = attachmentRepository.save(attachment);
+
+        // 3. Оновлюємо посилання у користувача
+        currentUser.setProfileImageId(savedAttachment);
+        userRepository.save(currentUser);
+
+        // Логування
+        publishAudit(currentUser, "INFO", "Оновлено фото профілю: " + file.getOriginalFilename(), "User", currentUser.getUserId());
+
+        return attachmentMapper.toResponseDto(savedAttachment);
+    }
+
+    public Resource getUserProfileImage(Integer userId) throws MalformedURLException {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("Користувача не знайдено"));
+
+        Attachment attachment = user.getProfileImageId(); // Отримуємо зв'язаний Attachment
+
+        if (attachment == null) {
+            throw new EntityNotFoundException("У користувача немає фото профілю");
+        }
+
+        Path filePath = Paths.get(attachment.getFilePath()); // Беремо шлях з БД
+        Resource resource = new UrlResource(filePath.toUri());
+
+        if (resource.exists() || resource.isReadable()) {
+            return resource;
+        } else {
+            throw new RuntimeException("Файл не знайдено на диску");
+        }
     }
 
     /**
