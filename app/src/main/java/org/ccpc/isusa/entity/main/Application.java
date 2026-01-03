@@ -78,7 +78,7 @@ public class Application {
     private String signature;
 
     @OneToMany(mappedBy = "application", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<Attachment> attachments;
+    private Set<Attachment> attachments = new java.util.HashSet<>(); // Ініціалізуємо
 
     @OneToMany(mappedBy = "application", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Comment> comments;

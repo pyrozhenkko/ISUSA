@@ -136,6 +136,7 @@ public class AttachmentService {
         Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
         // 5. Збереження в БД
+        // 5. Збереження в БД
         Attachment attachment = new Attachment();
         attachment.setApplication(app);
         attachment.setFileName(originalFileName);
@@ -143,6 +144,12 @@ public class AttachmentService {
         attachment.setUploadedDate(LocalDateTime.now());
 
         Attachment savedAttachment = attachmentRepository.save(attachment);
+
+        // ВАЖЛИВО: Оновлюємо зв'язок у пам'яті
+        if (app.getAttachments() == null) {
+            app.setAttachments(new java.util.HashSet<>());
+        }
+        app.getAttachments().add(savedAttachment);
 
         // 6. Audit log
         publishAudit(currentUser, "INFO",

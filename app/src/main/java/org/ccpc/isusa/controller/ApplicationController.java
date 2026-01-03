@@ -62,6 +62,23 @@ public class ApplicationController {
         }
     }
 
+    /**
+     * УНІВЕРСАЛЬНЕ СТВОРЕННЯ:
+     * 1. Якщо в 'data' є пароль -> Створюється і підписується (статус "Нова").
+     * 2. Якщо пароля немає -> Створюється чернетка.
+     * 3. 'file' — опціональний в обох випадках.
+     */
+    @PostMapping(value = "/full-submit", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAuthority('application:create')")
+    public ResponseEntity<ApplicationResponseDto> createApplication(
+            @RequestPart("data") @Valid ApplicationSignRequestDto request,
+            @RequestPart(value = "file", required = false) MultipartFile file,
+            @AuthenticationPrincipal User currentUser
+    ) throws IOException {
+        // Викликаємо універсальний метод сервісу
+        return ResponseEntity.ok(applicationService.processApplicationCreation(request, file, currentUser));
+    }
+
     // === БЛОК СТУДЕНТА (CRUD + ПІДПИС) ===
 
     /**
@@ -76,18 +93,39 @@ public class ApplicationController {
         return ResponseEntity.ok(applicationService.createDraft(request, currentUser));
     }
 
+//    /**
+//     * Редагувати ЧЕРНЕТКУ.
+//     */
+//    @PutMapping("/{id}")
+//    @PreAuthorize("hasAuthority('application:create')")
+//    public ResponseEntity<ApplicationResponseDto> updateDraft(
+//            @PathVariable Integer id,
+//            @Valid @RequestBody ApplicationDraftRequestDto request,
+//            @AuthenticationPrincipal User currentUser
+//    ) {
+//        try {
+//            return ResponseEntity.ok(applicationService.updateDraft(id, request, currentUser));
+//        } catch (IllegalStateException e) {
+//            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+//        }
+//    }
+
+
+
     /**
-     * Редагувати ЧЕРНЕТКУ.
+     * ОНОВЛЕННЯ ЧЕРНЕТКИ:
+     * Дозволяє змінити текст та/або додати файл, поки статус "Чернетка".
      */
-    @PutMapping("/{id}")
+    @PutMapping(value = "/{id}/full-update", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAuthority('application:create')")
     public ResponseEntity<ApplicationResponseDto> updateDraft(
             @PathVariable Integer id,
-            @Valid @RequestBody ApplicationDraftRequestDto request,
+            @RequestPart("data") @Valid ApplicationDraftRequestDto request,
+            @RequestPart(value = "file", required = false) MultipartFile file,
             @AuthenticationPrincipal User currentUser
-    ) {
+    ) throws IOException {
         try {
-            return ResponseEntity.ok(applicationService.updateDraft(id, request, currentUser));
+            return ResponseEntity.ok(applicationService.processApplicationUpdate(id, request, file, currentUser));
         } catch (IllegalStateException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }
@@ -110,8 +148,28 @@ public class ApplicationController {
         }
     }
 
+//    /**
+//     * Підписати та відправити вже існуючу чернетку.
+//     */
+//    @PostMapping("/{id}/sign")
+//    @PreAuthorize("hasAuthority('application:create')")
+//    public ResponseEntity<ApplicationResponseDto> signDraft(
+//            @PathVariable Integer id,
+//            @Valid @RequestBody SignExistingDraftDto request,
+//            @AuthenticationPrincipal User currentUser
+//    ) {
+//        try {
+//            return ResponseEntity.ok(applicationService.signExistingDraft(id, request.getPassword(), currentUser));
+//        } catch (SecurityException e) {
+//            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, e.getMessage());
+//        } catch (IllegalStateException e) {
+//            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+//        }
+//    }
+
     /**
-     * Підписати та відправити вже існуючу чернетку.
+     * ПІДПИС ІСНУЮЧОЇ ЧЕРНЕТКИ:
+     * Тільки JSON (пароль), бо файл зазвичай додається на етапі редагування чернетки.
      */
     @PostMapping("/{id}/sign")
     @PreAuthorize("hasAuthority('application:create')")

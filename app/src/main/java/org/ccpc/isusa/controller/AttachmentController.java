@@ -24,26 +24,26 @@ public class AttachmentController {
 
     private final AttachmentService attachmentService;
 
-    /**
-     * Завантажити файл до існуючої заявки.
-     * Content-Type: multipart/form-data
-     */
-    @PostMapping(value = "/upload/{applicationId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasAuthority('application:create')") // Доступно студентам (право на створення)
-    public ResponseEntity<AttachmentResponseDto> uploadFile(
-            @PathVariable Integer applicationId,
-            @RequestParam("file") MultipartFile file,
-            @AuthenticationPrincipal User currentUser
-    ) {
-        try {
-            return ResponseEntity.ok(attachmentService.addAttachment(applicationId, file, currentUser));
-        } catch (IOException e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Помилка збереження файлу");
-        } catch (RuntimeException e) {
-            // Обробка помилок бізнес-логіки (не знайдено, не той статус, немає доступу)
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-        }
-    }
+//    /**
+//     * Завантажити файл до існуючої заявки.
+//     * Content-Type: multipart/form-data
+//     */
+//    @PostMapping(value = "/upload/{applicationId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+//    @PreAuthorize("hasAuthority('application:create')") // Доступно студентам (право на створення)
+//    public ResponseEntity<AttachmentResponseDto> uploadFile(
+//            @PathVariable Integer applicationId,
+//            @RequestParam("file") MultipartFile file,
+//            @AuthenticationPrincipal User currentUser
+//    ) {
+//        try {
+//            return ResponseEntity.ok(attachmentService.addAttachment(applicationId, file, currentUser));
+//        } catch (IOException e) {
+//            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Помилка збереження файлу");
+//        } catch (RuntimeException e) {
+//            // Обробка помилок бізнес-логіки (не знайдено, не той статус, немає доступу)
+//            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
+//        }
+//    }
 
     /**
      * Скачати файл за його ID.

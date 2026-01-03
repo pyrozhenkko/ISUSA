@@ -135,6 +135,41 @@ public class ApplicationService {
         return applicationMapper.toResponseDto(applicationRepository.save(app));
     }
 
+    @Transactional(rollbackFor = Exception.class)
+    public ApplicationResponseDto processApplicationCreation(
+            ApplicationSignRequestDto dto,
+            MultipartFile file,
+            User currentUser
+    ) throws IOException {
+        ApplicationResponseDto response;
+
+        // СЦЕНАРІЙ А: Миттєвий підпис при створенні
+        if (dto.getPassword() != null && !dto.getPassword().isEmpty()) {
+            // 1. Створюємо та підписуємо (статус стає "Нова")
+            response = signAndSubmitApplication(dto, currentUser);
+
+            // 2. Додаємо файл (це дозволено, бо це частина одного процесу створення)
+            if (file != null && !file.isEmpty()) {
+                attachmentService.addAttachment(response.getApplicationId(), file, currentUser);
+            }
+        }
+        // СЦЕНАРІЙ Б: Створення чернетки (без підпису)
+        else {
+            ApplicationDraftRequestDto draftDto = new ApplicationDraftRequestDto();
+            draftDto.setTitle(dto.getTitle());
+            draftDto.setContent(dto.getContent());
+            draftDto.setTypeId(dto.getTypeId());
+
+            response = createDraft(draftDto, currentUser); // Статус "Чернетка"
+
+            if (file != null && !file.isEmpty()) {
+                attachmentService.addAttachment(response.getApplicationId(), file, currentUser);
+            }
+        }
+
+        return getMyApplicationById(response.getApplicationId(), currentUser);
+    }
+
     /**
      * 2. Редагування ЧЕРНЕТКИ.
      */
@@ -154,6 +189,26 @@ public class ApplicationService {
 
         publishAudit(currentUser, "INFO", "Оновлено чернетку заявки", appId);
         return applicationMapper.toResponseDto(applicationRepository.save(app));
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public ApplicationResponseDto processApplicationUpdate(
+            Integer appId,
+            ApplicationDraftRequestDto dto,
+            MultipartFile file,
+            User currentUser
+    ) throws IOException {
+
+        // 1. Існуючий метод updateDraft вже містить жорстку перевірку:
+        // if (!"Чернетка".equals(app.getStatus())) throw IllegalStateException
+        ApplicationResponseDto updated = updateDraft(appId, dto, currentUser);
+
+        // 2. Додаємо файл тільки якщо це все ще чернетка
+        if (file != null && !file.isEmpty()) {
+            attachmentService.addAttachment(appId, file, currentUser);
+        }
+
+        return getMyApplicationById(appId, currentUser);
     }
 
 
