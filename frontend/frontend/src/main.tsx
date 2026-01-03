@@ -13,6 +13,11 @@ import StudentPortal from './main-page.tsx';
 import InfoPage from './info.tsx'; 
 import AuthPage from './login.tsx';
 import EditApplicationPage from './edit.tsx'
+import About from './About.tsx';
+import Documentation from './Documentation.tsx';
+import PrivacyPolicy from './PrivacyPolicy.tsx';
+import SystemStatus from './SystemStatus.tsx';
+
 
 type UserRole = 'STUDENT' | 'LECTURER' | 'ADMIN'; 
 
@@ -120,6 +125,12 @@ const App = () => {
                 <Route path="/:documentId/edit" element={<EditApplicationPage />
 
                 } />
+            
+                <Route path="/docs" element={<Documentation />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/privacy" element={<PrivacyPolicy />} />
+                <Route path="/security" element={<SystemStatus />} />
+            
 
                 <Route path="*" element={
                     <div className="text-center p-10">

@@ -1,180 +1,256 @@
-import React from 'react'; 
-import { User, LogIn, LayoutDashboard, Zap, FileText, ArrowRight, CornerRightUp, MessageSquare, CheckCircle, Archive } from 'lucide-react';
+import React from 'react';
+import { 
+    BookOpen, Shield, Bell, LogOut, User, ArrowRight, 
+    BookMarked, FileEdit, Lock, TrendingUp, UserCircle, 
+    Github, LogIn,
+    MessageSquare, CheckCircle, Archive, CornerRightUp
+} from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import "./index.css";
+import Footer from './Footer';
 
-// 1. ОНОВЛЕННЯ ІНТЕРФЕЙСУ ПРОПСІВ
 interface InfoPageProps {
-    isAuthenticated: boolean; 
+    isAuthenticated: boolean;
+    handleLogout?: () => void; // Додано для повноти хедера
 }
 
-const InfoPage: React.FC<InfoPageProps> = ({ isAuthenticated }) => {
-    
-    const navigate = useNavigate(); 
-    
-    // Імітація імені. У реальному додатку можна було б взяти з localStorage.getItem('userData')
-    const userName = "Користувач системи"; 
-    
-    // 2. ОНОВЛЕНА ЛОГІКА ДІЇ КНОПОК
+const InfoPage: React.FC<InfoPageProps> = ({ isAuthenticated, handleLogout }) => {
+    const navigate = useNavigate();
+    const userName = "Користувач системи";
+
     const handleAuthAction = () => {
         if (!isAuthenticated) {
-            // Якщо користувач НЕ авторизований, перенаправляємо на /login
-            navigate('/login'); 
+            navigate('/login');
         } else {
-            // Якщо авторизований: перенаправляємо в кабінет
-            navigate('/account'); 
+            navigate('/account');
         }
     };
 
-    // 3. Динамічний блок авторизації
-    const AuthButton = () => {
-        const text = isAuthenticated ? 'Мій акаунт' : 'Вхід'; 
-        const Icon = isAuthenticated ? LayoutDashboard : LogIn;
-
-        return (
-            <button
-                onClick={handleAuthAction}
-                className="flex items-center px-4 py-2 bg-gradient-to-r from-green-500 to-teal-600 text-white rounded-lg shadow-md hover:from-green-600 hover:to-teal-700 transition font-medium text-base"
-            >
-                <Icon className="w-5 h-5 mr-2" />
-                {text}
-            </button>
-        );
-    };
-    
-    // Новий компонент для кроків інструкції
-    const StepCard: React.FC<{ icon: React.ReactNode, title: string, description: string, step: number }> = ({ icon, title, description, step }) => (
-        <div className="flex flex-col items-center text-center p-6 bg-white rounded-xl shadow-lg border border-gray-100">
-            <div className="w-12 h-12 flex items-center justify-center rounded-full bg-teal-100 text-teal-600 font-bold text-lg mb-4">
-                {step}
-            </div>
-            {React.cloneElement(icon as React.ReactElement)}
-            <h4 className="text-lg font-bold text-gray-900 mb-2">{title}</h4>
-            <p className="text-gray-600 text-sm">{description}</p>
-        </div>
-    );
-
     return (
-        <div className="min-h-screen bg-gray-50">
-            {/* 1. ХЕДЕР (Візитка та Кнопка Входу) */}
-            <header className="bg-white shadow-lg border-b border-gray-200">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-                    {/* Лого/Назва Системи */}
-                    <div className="flex items-center space-x-3">
-                        <Link to={'/'}>
-                            <Zap className="w-7 h-7 text-teal-600" />
+        <div className="min-h-screen bg-slate-900 text-white font-sans">
+            {/* Header */}
+            <header className="border-b border-slate-800 bg-slate-900 sticky top-0 z-50">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex items-center justify-between h-16">
+                        {/* Logo and Brand */}
+                        <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                            <div className="relative w-10 h-10 flex items-center justify-center">
+                                <BookOpen className="absolute inset-0 w-6 h-6 m-auto text-blue-500" strokeWidth={1.5} />
+                                <Shield className="absolute inset-0 w-10 h-10 text-emerald-500 opacity-30" strokeWidth={1} />
+                            </div>
+                            <span className="text-xl font-bold tracking-tight text-white">ISUSA</span>
                         </Link>
-                        <Link to={'/'}>
-                            <h1 className="text-2xl font-bold text-gray-900">ІСУСЗ Портал</h1>
-                        </Link>
+
+                        {/* Right Side Actions */}
+                        <div className="flex items-center gap-2 sm:gap-4">
+                            {isAuthenticated ? (
+                                <>
+                                    <button 
+                                        onClick={() => navigate('/account')}
+                                        className="w-8 h-8 rounded-full bg-slate-700 border border-slate-600 flex items-center justify-center hover:bg-slate-600 transition-colors"
+                                        title="Профіль"
+                                    >
+                                        <User className="w-4 h-4 text-slate-300" />
+                                    </button>
+                                    <button className="relative p-2 hover:bg-slate-800 rounded-lg transition-colors">
+                                        <Bell className="w-5 h-5 text-slate-300" />
+                                        <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
+                                    </button>
+                                    <button 
+                                        onClick={handleLogout}
+                                        className="hidden sm:flex items-center gap-2 px-3 py-1.5 border border-slate-700 rounded-lg hover:bg-slate-800 transition-colors"
+                                    >
+                                        <LogOut className="w-4 h-4 text-slate-400" />
+                                        <span className="text-sm text-slate-300">Вихід</span>
+                                    </button>
+                                </>
+                            ) : (
+                                <button 
+                                    onClick={() => navigate('/login')}
+                                    className="flex items-center gap-2 px-4 py-1.5 bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors font-medium text-sm"
+                                >
+                                    <LogIn className="w-4 h-4" />
+                                    Увійти
+                                </button>
+                            )}
+                        </div>
                     </div>
-                    
-                    {/* Динамічна Кнопка Авторизації */}
-                    {AuthButton()}
                 </div>
             </header>
 
-            {/* 2. ГОЛОВНА СЕКЦІЯ (Опис Системи) */}
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-                
-                {/* 2.1 Блок Заголовка */}
-                <div className="text-center mb-16">
-                    <h2 className="text-5xl font-extrabold text-gray-900 leading-tight">
-                        Інформаційна Система Управління <br />
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-500 to-green-600">Студентськими Заявами</span>
-                    </h2>
-                    <p className="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">
-                        Ваш швидкий, прозорий та сучасний шлях взаємодії з адміністрацією університету.
-                    </p>
-                </div>
-                
-                {/* 2.2 Блок Переваг */}
-                <section className="mb-20">
-                    <h3 className="text-3xl font-bold text-gray-900 text-center mb-10">Ключові переваги</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-                        
-                        <div className="bg-white p-8 rounded-xl shadow-xl border-t-4 border-teal-500 transform hover:scale-[1.02] transition duration-300">
-                            <FileText className="w-10 h-10 text-teal-500 mx-auto mb-4" />
-                            <h3 className="text-xl font-semibold text-gray-900 mb-2">Без паперів</h3>
-                            <p className="text-gray-600">Подавайте, відстежуйте та отримуйте рішення по заявах повністю онлайн. Мінімум бюрократії.</p>
-                        </div>
-                        
-                        <div className="bg-white p-8 rounded-xl shadow-xl border-t-4 border-teal-500 transform hover:scale-[1.02] transition duration-300">
-                            <Zap className="w-10 h-10 text-teal-500 mx-auto mb-4" />
-                            <h3 className="text-xl font-semibold text-gray-900 mb-2">Миттєве сповіщення</h3>
-                            <p className="text-gray-600">Отримуйте email-сповіщення про зміну статусу заяви одразу після рішення деканату.</p>
-                        </div>
-                        
-                        <div className="bg-white p-8 rounded-xl shadow-xl border-t-4 border-teal-500 transform hover:scale-[1.02] transition duration-300">
-                            <User className="w-10 h-10 text-teal-500 mx-auto mb-4" />
-                            <h3 className="text-xl font-semibold text-gray-900 mb-2">Прозорість</h3>
-                            <p className="text-gray-600">Відстежуйте кожен етап розгляду вашої заяви: від подачі до архівування.</p>
-                        </div>
-                    </div>
-                </section>
+            <main>
+                {/* Hero Section */}
+                <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+                    <div className="text-center max-w-4xl mx-auto">
+                        <h1 className="text-5xl sm:text-6xl font-bold mb-6 text-white tracking-tight leading-tight">
+                            Ефективне управління
+                            <br />
+                            <span className="text-blue-500 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
+                                Студентськими Заявами
+                            </span>
+                        </h1>
 
-                {/* 2.3 НОВА СЕКЦІЯ: Як це працює */}
-                <section className="mb-20 bg-teal-50 p-10 rounded-2xl shadow-inner">
-                    <h3 className="text-3xl font-bold text-gray-900 text-center mb-12">4 кроки до готової заяви</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-                        
-                        <StepCard 
-                            step={1}
-                            icon={<CornerRightUp />}
-                            title="Створення та Подання"
-                            description="Заповніть електронну форму заяви у своєму кабінеті, підпишіть КЕП (за потреби) та надішліть."
-                        />
-                        
-                        <StepCard 
-                            step={2}
-                            icon={<MessageSquare />}
-                            title="Перевірка та Розгляд"
-                            description="Деканат автоматично отримує заяву та починає її розгляд. Ви бачите поточний статус."
-                        />
-                        
-                        <StepCard 
-                            step={3}
-                            icon={<CheckCircle />}
-                            title="Схвалення та Рішення"
-                            description="Отримайте офіційне рішення в електронному вигляді. Вам надійде миттєве сповіщення."
-                        />
-                        
-                        <StepCard 
-                            step={4}
-                            icon={<Archive />}
-                            title="Зберігання"
-                            description="Ваша заява та рішення зберігаються в архіві системи, доступному у будь-який час."
-                        />
-                    </div>
-                </section>
-
-
-                {/* 2.4 CTA (Call to Action) */}
-                <div className="text-center mt-16">
-                    <button
-                        onClick={handleAuthAction}
-                        className="inline-flex items-center px-8 py-4 bg-teal-600 text-white text-xl font-bold rounded-full shadow-2xl shadow-teal-300 hover:bg-teal-700 transition transform hover:scale-105"
-                    >
-                        Почати роботу
-                        <ArrowRight className="w-5 h-5 ml-3" />
-                    </button>
-                    {/* Замінено authStatus !== 'loggedOut' на isAuthenticated */}
-                    {isAuthenticated && (
-                        <p className="mt-4 text-sm text-gray-500">
-                            Авторизовано як: <span className="font-semibold text-teal-600">{userName}</span>
+                        <p className="text-xl text-slate-400 mb-12 max-w-2xl mx-auto">
+                            Подавайте, відстежуйте та підписуйте університетські документи цифровим підписом на єдиній захищеній платформі.
                         </p>
-                    )}
-                </div>
 
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20">
+                            <button 
+                                onClick={handleAuthAction}
+                                className="w-full sm:w-auto px-8 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg flex items-center justify-center gap-2 transition-all transform hover:scale-105 font-bold border border-emerald-700 shadow-lg shadow-emerald-900/20"
+                            >
+                                <span>Почати роботу</span>
+                                <ArrowRight className="w-5 h-5" />
+                            </button>
+                            <Link 
+                                to="/docs" 
+                                className="w-full sm:w-auto px-8 py-3 border border-slate-700 hover:bg-slate-800 text-slate-300 rounded-lg flex items-center justify-center gap-2 transition-colors"
+                                >
+                                <BookMarked className="w-5 h-5" />
+                                <span>Документація</span>
+                                </Link>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Features Section */}
+                <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Draft System Card */}
+                        <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-8 hover:border-blue-500/50 transition-all group">
+                            <div className="flex items-start gap-4">
+                                <div className="p-3 bg-blue-600/10 border border-blue-600/20 rounded-lg group-hover:bg-blue-600/20">
+                                    <FileEdit className="w-6 h-6 text-blue-500" />
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="text-xl font-bold mb-2 text-white">Система Чернеток</h3>
+                                    <p className="text-slate-400 mb-4">
+                                        Зберігайте свій прогрес та повертайтеся до редагування заяв у будь-який час. Жодних втрачених даних завдяки системі чернеток.
+                                    </p>
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <span className="px-3 py-1 bg-slate-700/50 border border-slate-600 rounded text-slate-300 italic">Без паперів</span>
+                                        <span className="px-3 py-1 bg-slate-700/50 border border-slate-600 rounded text-slate-300">Редагування 24/7</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Digital Signature Card */}
+                        <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-8 hover:border-emerald-500/50 transition-all group">
+                            <div className="flex items-start gap-4">
+                                <div className="p-3 bg-emerald-600/10 border border-emerald-600/20 rounded-lg group-hover:bg-emerald-600/20">
+                                    <Lock className="w-6 h-6 text-emerald-500" />
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="text-xl font-bold mb-2 text-white">Цифровий Підпис</h3>
+                                    <p className="text-slate-400 mb-4">
+                                        Безпечно підписуйте та надсилайте документи з шифруванням RSA. Ваші підписи мають юридичну силу та надійно захищені.
+                                    </p>
+                                    <div className="flex items-center gap-2 text-sm text-slate-500">
+                                        <div className="px-3 py-1 bg-slate-700/50 border border-slate-600 rounded text-emerald-400">RSA-2048</div>
+                                        <div className="px-3 py-1 bg-slate-700/50 border border-slate-600 rounded text-emerald-400">Захищено</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Status Tracking Card */}
+                        <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-8 hover:border-blue-500/50 transition-all group md:col-span-1">
+                            <div className="flex items-start gap-4">
+                                <div className="p-3 bg-blue-600/10 border border-blue-600/20 rounded-lg group-hover:bg-blue-600/20">
+                                    <TrendingUp className="w-6 h-6 text-blue-500" />
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="text-xl font-bold mb-2 text-white">Відстеження Статусу</h3>
+                                    <p className="text-slate-400 mb-4">
+                                        Моніторьте прогрес вашої заяви в режимі реального часу за допомогою візуальної системи статусів.
+                                    </p>
+                                    
+                                    {/* Status Timeline */}
+                                    <div className="mt-8 flex items-center justify-between relative">
+                                        <div className="absolute top-5 left-0 right-0 h-0.5 bg-slate-700"></div>
+                                        {[
+                                            { s: 1, t: "Чернетка", active: true },
+                                            { s: 2, t: "Нова", active: true },
+                                            { s: 3, t: "Розгляд", active: false },
+                                            { s: 4, t: "Фінал", active: false }
+                                        ].map((item) => (
+                                            <div key={item.s} className="relative flex flex-col items-center gap-2 z-10">
+                                                <div className={`w-10 h-10 ${item.active ? 'bg-blue-600' : 'bg-slate-700'} border-4 border-slate-800 rounded-full flex items-center justify-center text-xs font-bold`}>
+                                                    {item.s}
+                                                </div>
+                                                <span className="text-[10px] uppercase tracking-wider font-bold text-slate-500">{item.t}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Profile Card Preview */}
+                        <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-8 hover:border-emerald-500/50 transition-all group">
+                            <div className="flex items-start gap-4">
+                                <div className="p-3 bg-emerald-600/10 border border-emerald-600/20 rounded-lg group-hover:bg-emerald-600/20">
+                                    <UserCircle className="w-6 h-6 text-emerald-500" />
+                                </div>
+                                <div className="flex-1">
+                                    <h3 className="text-xl font-bold mb-2 text-white">Профіль та Персоналізація</h3>
+                                    <p className="text-slate-400 mb-4">
+                                        Керуйте своїм студентським профілем. Завантажуйте фото та тримайте свої дані актуальними для адміністрації.
+                                    </p>
+                                    
+                                    <div className="mt-6 flex items-center gap-4 p-4 bg-slate-900/80 border border-slate-700 rounded-xl">
+                                        <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-emerald-600 rounded-full flex items-center justify-center shadow-lg">
+                                            <UserCircle className="w-8 h-8 text-white" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="h-2.5 bg-slate-700 rounded-full w-24 mb-2"></div>
+                                            <div className="h-2 bg-slate-800 rounded-full w-16"></div>
+                                        </div>
+                                        <button className="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold uppercase rounded border border-blue-700 transition-colors">
+                                            Оновити
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* How it works Section (Your Logic Integrated) */}
+                <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-32">
+                    <div className="bg-slate-800/30 border border-slate-800 rounded-3xl p-8 sm:p-12">
+                        <h2 className="text-3xl font-bold text-center mb-12">Як працює ІСУСЗ</h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                            <StepItem icon={<CornerRightUp className="text-blue-400" />} step={1} title="Подання" desc="Заповніть форму та підпишіть заяву." />
+                            <StepItem icon={<MessageSquare className="text-purple-400" />} step={2} title="Розгляд" desc="Деканат автоматично отримує запит." />
+                            <StepItem icon={<CheckCircle className="text-emerald-400" />} step={3} title="Рішення" desc="Отримайте схвалення онлайн." />
+                            <StepItem icon={<Archive className="text-amber-400" />} step={4} title="Архів" desc="Документ надійно зберігається." />
+                        </div>
+                    </div>
+                </section>
             </main>
-            
-            {/* 3. ФУТЕР */}
-            <footer className="bg-gray-800 text-white py-6 mt-12">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                    <p className="text-sm">&copy; {new Date().getFullYear()} ІСУСЗ. Всі права захищені.</p>
-                </div>
-            </footer>
+
+            {/* Footer */}
+            <Footer />
         </div>
     );
 };
+
+const StepItem = ({ icon, step, title, desc }: { icon: React.ReactNode, step: number, title: string, desc: string }) => (
+    <div className="relative flex flex-col items-center text-center group">
+        <div className="mb-4 p-4 bg-slate-800 rounded-2xl border border-slate-700 group-hover:border-slate-500 transition-colors relative">
+            <div className="absolute -top-2 -right-2 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-[10px] font-bold border-2 border-slate-900">
+                {step}
+            </div>
+            {/* Додаємо розмір через className, це безпечно для типів */}
+            <div className="w-8 h-8 flex items-center justify-center">
+                {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<any>, { className: "w-8 h-8" }) : icon}
+            </div>
+        </div>
+        <h4 className="font-bold mb-1">{title}</h4>
+        <p className="text-xs text-slate-500">{desc}</p>
+    </div>
+);
 
 export default InfoPage;

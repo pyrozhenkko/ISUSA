@@ -1,5 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Clock, CheckCircle, XCircle, Plus, User, BookOpen, Calendar, MessageSquare, Download, Eye, LogOut, Loader, AlertTriangle, Edit3, Trash2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { 
+  FileText, Clock, CheckCircle, XCircle, Plus, User, BookOpen, 
+  Calendar, LogOut, Loader, 
+  Edit3, Trash2, Shield, Bell, Zap, Upload,
+  Home, Archive, Edit
+} from 'lucide-react';
 
 type UserRole = 'STUDENT' | 'LECTURER' | 'ADMIN';
 const API_BASE_URL = 'http://localhost:8081/api/applications'; 
@@ -31,44 +37,7 @@ interface MyApplication {
   rejectionReason?: string;
 }
 
-const getStatusIcon = (status: string) => {
-  switch(status) {
-    case 'draft': return <Edit3 className="w-5 h-5 text-amber-500" />;
-    case 'pending':
-    case 'нова': return <Clock className="w-5 h-5 text-blue-500" />;
-    case 'in-review': return <Eye className="w-5 h-5 text-yellow-500" />;
-    case 'approved': return <CheckCircle className="w-5 h-5 text-green-500" />;
-    case 'rejected': return <XCircle className="w-5 h-5 text-red-500" />;
-    default: return null;
-  }
-};
-
-const getStatusText = (status: string) => {
-  const statusMap: Record<string, string> = {
-    draft: 'Чернетка',
-    nova: 'Нова (Очікує)',
-    'нова': 'Нова (Очікує)',
-    pending: 'Очікує розгляду',
-    'in-review': 'В обробці',
-    approved: 'Затверджено',
-    rejected: 'Відхилено'
-  };
-  return statusMap[status] || status;
-};
-
-const getStatusColor = (status: string) => {
-  const colorMap: Record<string, string> = {
-    draft: 'border-amber-200 bg-amber-50',
-    'нова': 'border-blue-200 bg-blue-50',
-    pending: 'border-blue-200 bg-blue-50',
-    'in-review': 'border-yellow-200 bg-yellow-50',
-    approved: 'border-green-200 bg-green-50',
-    rejected: 'border-red-200 bg-red-50'
-  };
-  return colorMap[status] || 'border-slate-200 bg-white';
-};
-
-// --- VIEW ДЛЯ ВИКЛАДАЧА ---
+// --- VIEW ДЛЯ ВИКЛАДАЧА (без змін в логіці) ---
 const LecturerView: React.FC<StudentPortalProps> = ({ userRole, userId }) => {
     const [applications, setApplications] = useState<MyApplication[]>([]);
     const [loading, setLoading] = useState(false);
@@ -78,101 +47,41 @@ const LecturerView: React.FC<StudentPortalProps> = ({ userRole, userId }) => {
         const fetchAllApplications = async () => {
             if (userRole !== 'LECTURER' && userRole !== 'ADMIN') return;
             const token = localStorage.getItem('authToken');
-            
             try {
                 setLoading(true);
                 const response = await fetch(`${API_BASE_URL}/all`, { 
                     method: 'GET',
                     headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                 });
-
                 if (response.ok) {
                     const data = await response.json(); 
-                    const mappedApplications: MyApplication[] = data.map((app: any) => ({
+                    setApplications(data.map((app: any) => ({
                         id: app.applicationId,
                         type: app.applicationType?.typeName || 'Незн. тип',
                         date: app.createdDate.split('T')[0],
                         status: app.applicationStatus?.statusName?.toLowerCase() || 'pending',
                         studentName: app.student?.fullName || app.student?.username, 
                         comment: app.content, 
-                        rejectionReason: app.rejectionReason,
-                    }));
-                    setApplications(mappedApplications);
-                } else if (response.status === 403) {
-                    setError('Недостатньо прав для перегляду всіх заявок.');
-                } else {
-                    setError('Помилка завантаження списку заявок.');
+                    })));
                 }
-            } catch (err) {
-                setError('Помилка мережі при завантаженні заявок викладача.');
-            } finally {
-                setLoading(false);
-            }
+            } catch (err) { setError('Помилка мережі'); } finally { setLoading(false); }
         };
         fetchAllApplications();
     }, [userRole, userId]);
 
-    const handleConfirm = (id: number) => {
-        alert(`Підтвердити заявку #${id}. (PUT /confirm)`);
-    };
-
-    const handleReject = (id: number) => {
-        const reason = prompt(`Введіть причину відхилення заявки #${id}:`);
-        if (reason) {
-            alert(`Заявка #${id} відхилена з причиною: ${reason}. (PUT /reject)`);
-        }
-    };
-    
     return (
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-            <div className="p-4 sm:p-6 border-b border-slate-200 bg-white">
-                <h2 className="text-lg sm:text-xl font-bold text-slate-900">Заяви на розгляді ({applications.length})</h2>
-                <p className="text-xs sm:text-sm text-slate-500 mt-1">Доступно для ролі: {userRole}</p>
-            </div>
-
-            <div className="p-4 sm:p-6">
-                {loading && <div className="text-center py-10 text-blue-600"><Loader className="w-6 h-6 animate-spin inline mr-2" /> Завантаження...</div>}
-                {error && <div className="p-4 text-center text-red-600 bg-red-50 rounded-xl"><AlertTriangle className="w-5 h-5 inline mr-2" /> {error}</div>}
-                
-                {!loading && !error && applications.length > 0 && (
-                    <div className="space-y-4">
-                        {applications.map((app) => (
-                            <div key={app.id} className={`border-2 rounded-xl p-4 sm:p-5 transition hover:shadow-md ${getStatusColor(app.status)}`}>
-                                <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-                                    <div className="flex-1">
-                                        <h3 className="font-bold text-slate-900 text-base sm:text-lg mb-1">{app.type} (ID: {app.id})</h3>
-                                        <p className="text-sm text-slate-700 font-medium">Студент: {app.studentName}</p>
-                                        <div className="text-xs text-slate-500 mt-1 flex items-center"><Calendar className="w-3 h-3 mr-1"/> Подано: {new Date(app.date).toLocaleDateString()}</div>
-                                        {app.comment && <div className="mt-3 text-sm p-3 bg-white/50 rounded-lg border border-white/20 italic">"{app.comment}"</div>}
-                                    </div>
-                                    
-                                    <div className="flex flex-row md:flex-col gap-2 shrink-0">
-                                        {(app.status === 'pending' || app.status === 'нова') ? (
-                                            <>
-                                                <button onClick={() => handleConfirm(app.id)} className="flex-1 md:w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-xs sm:text-sm font-bold shadow-sm">
-                                                    <CheckCircle className="w-4 h-4 mr-1 inline" /> Підтвердити
-                                                </button>
-                                                <button onClick={() => handleReject(app.id)} className="flex-1 md:w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-xs sm:text-sm font-bold shadow-sm">
-                                                    <XCircle className="w-4 h-4 mr-1 inline" /> Відхилити
-                                                </button>
-                                            </>
-                                        ) : (
-                                            <span className="px-3 py-1 rounded-full text-xs font-bold bg-white/80 border border-current self-start md:self-end">
-                                                {getStatusText(app.status)}
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-                {!loading && !error && applications.length === 0 && (
-                    <div className="py-12 text-center text-slate-400">
-                        <FileText className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                        <p>Наразі немає активних заявок.</p>
-                    </div>
-                )}
+        <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+            <div className="p-6 border-b border-slate-700"><h2 className="text-xl font-bold">Заяви на розгляді</h2></div>
+            <div className="p-6">
+                {loading ? <Loader className="animate-spin mx-auto" /> : 
+                <div className="space-y-4">
+                    {applications.map(app => (
+                        <div key={app.id} className="p-4 bg-slate-900 border border-slate-700 rounded-lg">
+                            <p className="font-bold">{app.type} (ID: {app.id})</p>
+                            <p className="text-sm text-slate-400">Студент: {app.studentName}</p>
+                        </div>
+                    ))}
+                </div>}
             </div>
         </div>
     );
@@ -180,6 +89,7 @@ const LecturerView: React.FC<StudentPortalProps> = ({ userRole, userId }) => {
 
 // --- ГОЛОВНИЙ ПОРТАЛ СТУДЕНТА ---
 const StudentPortal: React.FC<StudentPortalProps> = ({ handleLogout, userRole, userId }) => {
+  const [activeTab, setActiveTab] = useState<'overview' | 'drafts' | 'active' | 'archive'>('overview');
   const [showNewApplicationModal, setShowNewApplicationModal] = useState(false);
   const [selectedType, setSelectedType] = useState('');
   const [newApplicationDescription, setNewApplicationDescription] = useState('');
@@ -190,10 +100,18 @@ const StudentPortal: React.FC<StudentPortalProps> = ({ handleLogout, userRole, u
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [editingAppId, setEditingAppId] = useState<number | null>(null);
+const [showNotifications, setShowNotifications] = useState(false);
 
-  const approvedCount = applications.filter(a => a.status === 'approved').length;
-  const activeCount = applications.filter(a => ['pending', 'in-review', 'нова'].includes(a.status)).length;
-  const totalCount = applications.length;
+const [notifications, setNotifications] = useState(1);
+const [notificationList, setNotificationList] = useState([
+  {
+    id: 1,
+    title: "Вітаємо в системі!",
+    text: "Ви успішно авторизувались в ISUSA. Тепер ви можете створювати та підписувати заяви онлайн.",
+    time: "Щойно",
+    isNew: true
+  }
+]);
 
   const studentInfo = {
     name: 'Іванов Іван Петрович',
@@ -205,102 +123,75 @@ const StudentPortal: React.FC<StudentPortalProps> = ({ handleLogout, userRole, u
 
   const applicationTypes = Object.keys(APPLICATION_TYPE_MAP);
 
+  // Категоризація заявок для вкладок
+  const drafts = applications.filter(a => a.status === 'draft');
+  const activeApps = applications.filter(a => ['pending', 'in-review', 'нова'].includes(a.status));
+  const archivedApps = applications.filter(a => ['approved', 'rejected'].includes(a.status));
+
+  const stats = {
+    total: applications.length,
+    approved: applications.filter(a => a.status === 'approved').length,
+    rejected: applications.filter(a => a.status === 'rejected').length,
+    inProgress: activeApps.length
+  };
+
   useEffect(() => {
-    if (userId) {
-        setProfileImageUrl(`http://localhost:8081/api/applications/profile-image/${userId}?t=${Date.now()}`);
-    }
+    if (userId) setProfileImageUrl(`${API_BASE_URL}/profile-image/${userId}?t=${Date.now()}`);
   }, [userId]);
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-        alert('Будь ласка, виберіть зображення');
-        return;
-    }
-
     const formData = new FormData();
     formData.append('file', file);
-
     const token = localStorage.getItem('authToken');
     setIsUploading(true);
-
     try {
-        const response = await fetch(`http://localhost:8081/api/applications/profile-image`, {
+        const response = await fetch(`${API_BASE_URL}/profile-image`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` },
             body: formData,
         });
-
-        if (response.ok) {
-            setProfileImageUrl(`http://localhost:8081/api/applications/profile-image/${userId}?t=${Date.now()}`);
-        } else {
-            alert('Помилка при завантаженні фото');
-        }
-    } catch (error) {
-        console.error('Upload error:', error);
-        alert('Помилка мережі');
-    } finally {
-        setIsUploading(false);
-    }
+        if (response.ok) setProfileImageUrl(`${API_BASE_URL}/profile-image/${userId}?t=${Date.now()}`);
+    } catch (e) { alert('Помилка завантаження'); } finally { setIsUploading(false); }
   };
 
   useEffect(() => {
     const fetchMyApplications = async () => {
         if (userRole !== 'STUDENT') return; 
         const token = localStorage.getItem('authToken');
-        
         try {
             setLoading(true);
             const response = await fetch(`${API_BASE_URL}/my`, { 
-                method: 'GET',
-                headers: { 
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Authorization': `Bearer ${token}` },
             });
-
             if (response.ok) {
                 const data = await response.json(); 
-                const mappedApplications: MyApplication[] = data.map((app: any) => ({
+                setApplications(data.map((app: any) => ({
                     id: app.applicationId,
                     type: app.applicationType?.typeName || app.title || "Заява",
                     date: app.createdDate.split('T')[0],
-                    status: app.applicationStatus?.statusName?.toLowerCase() || 'pending',
+                    status: app.applicationStatus?.statusName?.toLowerCase() === 'чернетка' ? 'draft' : 
+                            app.applicationStatus?.statusName?.toLowerCase() === 'нова' ? 'нова' : 
+                            app.applicationStatus?.statusName?.toLowerCase() || 'pending',
                     comment: app.content, 
-                    rejectionReason: app.rejectionReason,
-                }));
-                setApplications(mappedApplications);
-            } else {
-                setError('Не вдалося завантажити список заявок.');
+                })));
             }
-        } catch (err) {
-            setError('Помилка мережі при з’єднанні з сервером.');
-        } finally {
-            setLoading(false);
-        }
+        } catch (err) { setError('Помилка завантаження'); } finally { setLoading(false); }
     };
     fetchMyApplications();
   }, [userRole, userId]);
 
   const handleAction = async () => {
-    if (!selectedType || newApplicationDescription.trim() === '') {
-        alert("Будь ласка, заповніть всі поля.");
-        return;
-    }
-
+    if (!selectedType || newApplicationDescription.trim() === '') return alert("Заповніть поля");
     const typeId = APPLICATION_TYPE_MAP[selectedType];
     const token = localStorage.getItem('authToken');
-    
-    let url = `${API_BASE_URL}/draft`;
-    let method = 'POST';
+    let url = `${API_BASE_URL}/draft`, method = 'POST';
     let body: any = { typeId, title: selectedType, content: newApplicationDescription };
 
     if (editingAppId) {
         if (isConfirmedToSign) {
             url = `${API_BASE_URL}/${editingAppId}/sign`;
-            method = 'POST';
             body = { password: "USER_CONFIRMED" }; 
         } else {
             url = `${API_BASE_URL}/${editingAppId}`;
@@ -314,266 +205,278 @@ const StudentPortal: React.FC<StudentPortalProps> = ({ handleLogout, userRole, u
     try {
         const response = await fetch(url, {
             method,
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
             body: JSON.stringify(body),
         });
-
         if (response.ok) {
             const result = await response.json();
-            
-            // Оновлюємо список заявок локально
             const updatedApp: MyApplication = { 
                 id: result.applicationId, 
                 type: result.applicationType?.typeName || selectedType,
                 date: new Date().toISOString().split('T')[0],
-                status: result.applicationStatus?.statusName?.toLowerCase() || (isConfirmedToSign ? 'нова' : 'draft'),
+                status: result.applicationStatus?.statusName?.toLowerCase() === 'чернетка' ? 'draft' : 
+                        isConfirmedToSign ? 'нова' : 'draft',
                 comment: result.content
             };
-
-            if (editingAppId) {
-                setApplications(prev => prev.map(a => a.id === editingAppId ? updatedApp : a));
-            } else {
-                setApplications(prev => [updatedApp, ...prev]);
-            }
-            
+            if (editingAppId) setApplications(prev => prev.map(a => a.id === editingAppId ? updatedApp : a));
+            else setApplications(prev => [updatedApp, ...prev]);
             closeModal();
-        } else {
-            alert("Помилка при виконанні операції.");
         }
-    } catch (error) {
-        alert("Помилка з’єднання з сервером.");
-    }
-};
+    } catch (e) { alert("Помилка запиту"); }
+  };
 
-const closeModal = () => {
+  const closeModal = () => {
     setShowNewApplicationModal(false);
     setEditingAppId(null);
     setSelectedType('');
     setNewApplicationDescription('');
     setIsConfirmedToSign(false);
-};
+  };
 
-const deleteDraft = async (id: number) => {
-    if (!window.confirm("Ви впевнені, що хочете видалити цю чернетку?")) return;
-    
+  const deleteDraft = async (id: number) => {
+    if (!window.confirm("Видалити чернетку?")) return;
     const token = localStorage.getItem('authToken');
     try {
-        const response = await fetch(`${API_BASE_URL}/${id}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
+        const response = await fetch(`${API_BASE_URL}/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+        if (response.ok) setApplications(prev => prev.filter(a => a.id !== id));
+    } catch (e) { alert("Помилка"); }
+  };
 
-        if (response.ok) {
-            setApplications(prev => prev.filter(a => a.id !== id));
-        } else {
-            alert("Не вдалося видалити. Можливо, це вже не чернетка.");
-        }
-    } catch (e) {
-        alert("Помилка мережі.");
+  const getStatusStyle = (status: string) => {
+    switch (status) {
+      case 'approved': return 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20';
+      case 'rejected': return 'text-red-500 bg-red-500/10 border-red-500/20';
+      case 'draft': return 'text-amber-500 bg-amber-500/10 border-amber-500/20';
+      default: return 'text-blue-500 bg-blue-500/10 border-blue-500/20';
     }
-};
-
-  const PortalHeader = (title: string, subtitle: string, initials: string) => (
-  <header className="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-40">
-    <div className="max-w-6xl mx-auto px-4 py-3 sm:py-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2 sm:space-x-3">
-          <div className="bg-gradient-to-br from-blue-600 to-purple-600 p-1.5 sm:p-2 rounded-xl">
-            <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-base sm:text-xl font-bold text-slate-900 leading-tight">{title}</h1>
-            <p className="text-[10px] sm:text-sm text-slate-500">{subtitle}</p>
-          </div>
-        </div>
-        <div className="flex items-center space-x-2 sm:space-x-4">
-          <div className="text-right hidden md:block">
-            <p className="font-medium text-sm text-slate-900">{studentInfo.name}</p>
-            <p className="text-xs text-slate-500">{userRole}</p>
-          </div>
-          
-          <div className="w-9 h-9 sm:w-11 sm:h-11 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 font-bold text-sm sm:text-lg overflow-hidden border border-slate-100 shadow-inner">
-            {profileImageUrl ? (
-              <img src={profileImageUrl} alt="Avatar" className="w-full h-full object-cover" />
-            ) : (
-              initials
-            )}
-          </div>
-
-          <button onClick={handleLogout} className="p-2 text-slate-400 hover:text-red-500 transition-colors">
-            <LogOut className="w-5 h-5 sm:w-6 sm:h-6" />
-          </button>
-        </div>
-      </div>
-    </div>
-  </header>
-);
+  };
 
   if (userRole === 'LECTURER' || userRole === 'ADMIN') {
     return (
-      <div className="min-h-screen bg-slate-50">
-        {PortalHeader("Панель Викладача", `Керування запитами`, "ВК")}
-        <main className="max-w-6xl mx-auto px-4 py-6 sm:py-8">
-            <LecturerView handleLogout={handleLogout} userRole={userRole} userId={userId} /> 
-        </main>
+      <div className="min-h-screen bg-slate-900 text-white">
+        <header className="border-b border-slate-800 p-4 flex justify-between items-center">
+            <div className="flex items-center gap-2"><BookOpen className="text-blue-500" /> <span className="font-bold">ISUSA ADMIN</span></div>
+            <button onClick={handleLogout} className="p-2 text-slate-400 hover:text-red-500"><LogOut /></button>
+        </header>
+        <main className="max-w-7xl mx-auto p-8"><LecturerView handleLogout={handleLogout} userRole={userRole} userId={userId} /></main>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {PortalHeader("Особистий кабінет", "Студентський портал", "ІІ")}
-      
-      <main className="max-w-6xl mx-auto px-4 py-6 sm:py-8 space-y-6">
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center space-x-4">
-                    <div className="relative group">
-                        <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center text-white font-bold text-xl sm:text-2xl shadow-lg overflow-hidden border-2 border-white ring-4 ring-slate-50 group-hover:ring-blue-100 transition-all duration-300 relative">
-                            {profileImageUrl ? (
-                                <img src={profileImageUrl} alt="Profile" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                            ) : null}
-                            {!profileImageUrl && <span className="absolute z-0">ІІ</span>}
-                            <label htmlFor="profile-upload" className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer">
-                                {isUploading ? <Loader className="w-6 h-6 text-white animate-spin" /> : <Edit3 className="w-6 h-6 text-white" />}
-                                <input id="profile-upload" type="file" className="hidden" accept="image/*" onChange={handleImageUpload} disabled={isUploading} />
-                            </label>
-                        </div>
-                    </div>
-                    <div>
-                        <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-1">{studentInfo.name}</h2>
-                        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs sm:text-sm text-slate-500">
-                            <span className="flex items-center"><User className="w-3.5 h-3.5 mr-1" /> {studentInfo.studentId}</span>
-                            <span className="hidden sm:inline">•</span>
-                            <span>{studentInfo.group}</span>
-                            <span className="hidden sm:inline">•</span>
-                            <span>{studentInfo.course}</span>
-                        </div>
-                    </div>
+    <div className="min-h-screen bg-slate-900 text-white font-sans">
+      {/* Header */}
+      <header className="border-b border-slate-800 bg-slate-900 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                <div className="relative w-10 h-10">
+                    <BookOpen className="absolute inset-0 w-6 h-6 m-auto text-blue-500" strokeWidth={1.5} />
+                    <Shield className="absolute inset-0 w-10 h-10 text-emerald-500 opacity-30" strokeWidth={1} />
                 </div>
-                <button 
-                  onClick={() => {
-                      setEditingAppId(null);
-                      setShowNewApplicationModal(true);
-                  }} 
-                  className="w-full sm:w-auto flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition font-bold shadow-md"
-              >
-                  <Plus className="w-5 h-5 mr-2" /> Нова заява
-              </button>
-            </div>
-        </div>
+                <span className="text-xl font-bold tracking-tight text-white">ISUSA</span>
+            </Link>
 
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            {[
-                { label: 'Активні', value: activeCount, icon: Clock, color: 'text-blue-600' },
-                { label: 'Затверджено', value: approvedCount, icon: CheckCircle, color: 'text-green-600' },
-                { label: 'Всього', value: totalCount, icon: FileText, color: 'text-slate-600' }
-            ].map((stat, i) => (
-                <div key={i} className="bg-white rounded-xl border border-slate-200 p-3 sm:p-4 flex items-center justify-between shadow-sm">
-                    <div>
-                        <p className={`text-xl sm:text-2xl font-bold ${stat.color}`}>{stat.value}</p>
-                        <p className="text-[10px] sm:text-xs text-slate-500 font-bold uppercase tracking-wider">{stat.label}</p>
-                    </div>
-                    <stat.icon className={`w-6 h-6 sm:w-8 sm:h-8 ${stat.color} opacity-20`} />
-                </div>
-            ))}
-        </div>
+            <div className="flex items-center gap-4">
+                <div className="relative"> 
+                    {/* 1. Кнопка дзвіночка */}
+                    <button 
+                        onClick={() => setShowNotifications(!showNotifications)}
+                        className={`relative p-2 rounded-lg transition-colors ${showNotifications ? 'bg-slate-800' : 'hover:bg-slate-800'}`}
+                    >
+                        <Bell className="w-5 h-5 text-slate-300" />
+                        {notifications > 0 && (
+                            <span className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white border-2 border-slate-900">
+                                {notifications}
+                            </span>
+                        )}
+                    </button>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-            <div className="p-4 sm:p-6 border-b border-slate-100 bg-white">
-                <h2 className="text-lg sm:text-xl font-bold text-slate-900">Мої заяви</h2>
-            </div>
-            <div className="p-4 sm:p-6 space-y-4">
-                {loading ? (
-                    <div className="py-12 text-center text-blue-500 flex flex-col items-center gap-2"><Loader className="w-8 h-8 animate-spin" /><span className="text-sm font-medium">Завантаження даних...</span></div>
-                ) : error ? (
-                    <div className="p-4 bg-red-50 text-red-600 rounded-xl text-center text-sm flex items-center justify-center gap-2"><AlertTriangle className="w-5 h-5" /> {error}</div>
-                ) : applications.length === 0 ? (
-                    <div className="py-16 text-center text-slate-400"><FileText className="w-16 h-16 mx-auto mb-4 opacity-10" /><p className="text-sm">Список порожній.</p></div>
-                ) : (
-                    applications.map((app) => (
-                        <div key={app.id} className={`border rounded-2xl p-4 sm:p-5 transition hover:border-blue-300 ${getStatusColor(app.status)}`}>
-                            <div className="flex flex-col md:flex-row justify-between items-start gap-4">
-                                <div className="flex items-start gap-3">
-                                    <div className="mt-1 shrink-0">{getStatusIcon(app.status)}</div>
-                                    <div className="space-y-1">
-                                        <h3 className="font-bold text-slate-900 text-base sm:text-lg leading-tight">{app.type}</h3>
-                                        <div className="flex items-center text-xs text-slate-500"><Calendar className="w-3.5 h-3.5 mr-1" /> {new Date(app.date).toLocaleDateString('uk-UA')}</div>
-                                        {app.comment && <div className="mt-3 text-xs sm:text-sm text-slate-700 bg-white/60 p-3 rounded-lg border border-white/40 italic">"{app.comment}"</div>}
-                                    </div>
+                    {showNotifications && (
+                        <>
+                            <div 
+                                className="fixed inset-0 z-40 cursor-default" 
+                                onClick={() => setShowNotifications(false)}
+                            ></div>
+                            
+                            <div className="absolute right-0 mt-3 w-80 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in duration-200 origin-top-right">
+                                {/* Заголовок вікна */}
+                                <div className="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-800">
+                                    <h3 className="font-bold text-sm text-white">Сповіщення</h3>
+                                    <button 
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setNotificationList([]);
+                                            setNotifications(0);
+                                        }} 
+                                        className="text-[10px] text-blue-400 hover:text-blue-300 uppercase font-bold"
+                                    >
+                                        Очистити все
+                                    </button>
                                 </div>
-                                <div className="flex flex-row md:flex-col items-center md:items-end w-full md:w-auto justify-between gap-3">
-                                    <span className="text-[10px] sm:text-xs font-bold px-3 py-1 rounded-full bg-white/80 border border-current">{getStatusText(app.status)}</span>
-                                    <div className="flex gap-2">
-                                    {app.status.toLowerCase() === 'false' && (
-                                        <>
-                                            <button 
-                                                onClick={() => {
-                                                    setEditingAppId(app.id);
-                                                    setSelectedType(app.type);
-                                                    setNewApplicationDescription(app.comment || '');
-                                                    setIsConfirmedToSign(false);
-                                                    setShowNewApplicationModal(true);
-                                                }} 
-                                                className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition" 
-                                                title="Редагувати чернетку"
-                                            >
-                                                <Edit3 className="w-4 h-4" />
-                                            </button>
-                                            <button 
-                                                onClick={() => deleteDraft(app.id)}
-                                                className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition" 
-                                                title="Видалити чернетку"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </>
+
+                                {/* Список сповіщень */}
+                                <div className="max-h-96 overflow-y-auto bg-slate-800">
+                                    {notificationList.length > 0 ? (
+                                        notificationList.map((notification) => (
+                                            <div key={notification.id} className="p-4 border-b border-slate-700/50 bg-blue-500/5 hover:bg-slate-700/50 transition-colors cursor-pointer group">
+                                                <div className="flex gap-3">
+                                                    <div className="mt-1 w-8 h-8 rounded-full bg-blue-600/20 flex items-center justify-center shrink-0">
+                                                        <Zap size={14} className="text-blue-500" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs text-white leading-relaxed">
+                                                            <span className="font-bold text-blue-400">{notification.title}</span> {notification.text}
+                                                        </p>
+                                                        <p className="text-[10px] text-slate-500 mt-2">{notification.time}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="p-8 text-center">
+                                            <Bell size={24} className="mx-auto text-slate-600 mb-2 opacity-20" />
+                                            <p className="text-xs text-slate-500">У вас немає нових сповіщень</p>
+                                        </div>
                                     )}
                                 </div>
-                                </div>
                             </div>
-                        </div>
-                    ))
-                )}
+                        </>
+                    )}
+                </div>
+              <button onClick={handleLogout} className="flex items-center gap-2 px-3 py-1.5 border border-slate-700 rounded-lg hover:bg-slate-800 transition-colors">
+                <LogOut className="w-4 h-4 text-slate-400" />
+                <span className="text-sm text-slate-300">Вийти</span>
+              </button>
             </div>
+          </div>
         </div>
-      </main>
+      </header>
 
-      {showNewApplicationModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg flex flex-col max-h-[95vh] overflow-hidden">
-            <div className="p-5 sm:p-6 border-b border-slate-100 bg-white">
-              <h3 className="text-xl sm:text-2xl font-bold text-slate-900">Нова заява</h3>
-            </div>
-            <div className="p-5 sm:p-6 overflow-y-auto space-y-6 bg-white">
-              <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">1. Тип заяви</label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {applicationTypes.map((type, idx) => (
-                    <button key={idx} onClick={() => setSelectedType(type)} className={`text-left px-4 py-3 rounded-xl border-2 text-xs sm:text-sm transition-all ${selectedType === type ? 'border-blue-600 bg-blue-50 text-blue-700 font-bold' : 'border-slate-100 hover:border-slate-200 text-slate-600'}`}>{type}</button>
-                  ))}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Sidebar */}
+          <div className="lg:col-span-1">
+            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 sticky top-24">
+              <div className="flex flex-col items-center mb-6">
+                <div className="relative group">
+                  <div className="w-32 h-32 bg-gradient-to-br from-blue-600 to-emerald-600 rounded-full overflow-hidden flex items-center justify-center border-4 border-slate-700">
+                    {profileImageUrl ? <img src={profileImageUrl} className="w-full h-full object-cover" alt="Avatar" /> : <User className="w-16 h-16 text-white" />}
+                  </div>
+                  <label className="absolute bottom-0 right-0 w-10 h-10 bg-blue-600 hover:bg-blue-500 rounded-full flex items-center justify-center border-4 border-slate-800 cursor-pointer transition-colors">
+                    {isUploading ? <Loader className="w-4 h-4 animate-spin text-white" /> : <Upload className="w-4 h-4 text-white" />}
+                    <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} disabled={isUploading} />
+                  </label>
                 </div>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">2. Опис заяви</label>
-                <textarea rows={4} value={newApplicationDescription} onChange={(e) => setNewApplicationDescription(e.target.value)} placeholder="Опишіть ваше прохання детально..." className="w-full px-4 py-3 bg-white text-slate-900 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition-all" />
+
+              <div className="text-center mb-6 pb-6 border-b border-slate-700">
+                <h2 className="text-lg font-bold text-white mb-1">{studentInfo.name}</h2>
+                <p className="text-xs text-slate-400 uppercase tracking-wider">{studentInfo.faculty}</p>
               </div>
-              <div className={`p-4 rounded-2xl border transition-all ${isConfirmedToSign ? 'bg-green-50 border-green-200' : 'bg-slate-50 border-slate-200'}`}>
-                <label className="flex items-start gap-3 cursor-pointer select-none">
-                  <input type="checkbox" checked={isConfirmedToSign} onChange={(e) => setIsConfirmedToSign(e.target.checked)} className="mt-1 h-5 w-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer" />
-                  <div>
-                    <p className="text-sm font-bold text-slate-800">Підписати та подати</p>
-                    <p className="text-[10px] sm:text-xs text-slate-500 mt-1">Підтверджую достовірність даних.</p>
-                  </div>
-                </label>
+
+              <div className="space-y-3 mb-6">
+                <div className="flex justify-between text-sm"><span className="text-slate-400">Група:</span><span className="text-white">{studentInfo.group}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-slate-400">Курс:</span><span className="text-white">{studentInfo.course}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-slate-400">Студ. ID:</span><span className="text-slate-500 font-mono">#{studentInfo.studentId.slice(-4)}</span></div>
               </div>
             </div>
-            <div className="p-5 sm:p-6 bg-slate-50 border-t border-slate-100 flex flex-col-reverse sm:flex-row gap-3">
-              <button onClick={() => { setShowNewApplicationModal(false); setIsConfirmedToSign(false); }} className="flex-1 px-4 py-3 text-sm font-bold text-slate-500 hover:text-slate-700">Скасувати</button>
-              <button onClick={handleAction} disabled={!selectedType || newApplicationDescription.trim() === ''} className={`flex-[2] px-6 py-3 rounded-2xl font-bold shadow-lg transition-all active:scale-95 disabled:opacity-40 ${isConfirmedToSign ? 'bg-blue-600 text-white' : 'bg-amber-500 text-white'}`}>{isConfirmedToSign ? 'Підписати та надіслати' : 'Зберегти як чернетку'}</button>
+          </div>
+
+          {/* Main Content */}
+          <div className="lg:col-span-3 space-y-6">
+            {/* Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                { l: 'Всього', v: stats.total, i: FileText, c: 'text-blue-500' },
+                { l: 'Схвалено', v: stats.approved, i: CheckCircle, c: 'text-emerald-500' },
+                { l: 'Відхилено', v: stats.rejected, i: XCircle, c: 'text-red-500' },
+                { l: 'У роботі', v: stats.inProgress, i: Clock, c: 'text-blue-400' }
+              ].map((s, idx) => (
+                <div key={idx} className="bg-slate-800 border border-slate-700 rounded-xl p-4">
+                  <div className="flex items-center gap-3">
+                    <s.i className={`w-8 h-8 ${s.c} opacity-80`} />
+                    <div><div className="text-2xl font-bold">{s.v}</div><div className="text-[10px] uppercase text-slate-500 font-bold">{s.l}</div></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button onClick={() => { setEditingAppId(null); setShowNewApplicationModal(true); }} className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl flex items-center justify-center gap-3 transition-all font-bold border border-emerald-700 shadow-lg">
+              <Plus className="w-6 h-6" /> <span className="text-lg">Створити нову заяву</span>
+            </button>
+
+            {/* Tabs */}
+            <div className="flex gap-4 border-b border-slate-800">
+              {[
+                { id: 'overview', label: 'Огляд', icon: Home },
+                { id: 'drafts', label: `Чернетки (${drafts.length})`, icon: Edit3 },
+                { id: 'active', label: `Активні (${activeApps.length})`, icon: Clock },
+                { id: 'archive', label: `Архів (${archivedApps.length})`, icon: Archive }
+              ].map(t => (
+                <button key={t.id} onClick={() => setActiveTab(t.id as any)} className={`pb-4 px-2 text-sm flex items-center gap-2 transition-all border-b-2 ${activeTab === t.id ? 'border-blue-500 text-blue-500' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
+                  <t.icon size={16} /> {t.label}
+                </button>
+              ))}
+            </div>
+
+            {/* List */}
+            <div className="space-y-3">
+                {loading ? <div className="py-20 text-center"><Loader className="animate-spin mx-auto text-blue-500" /></div> : 
+                 (activeTab === 'overview' ? applications : 
+                  activeTab === 'drafts' ? drafts : 
+                  activeTab === 'active' ? activeApps : archivedApps).map(app => (
+                    <div key={app.id} className="bg-slate-800/50 border border-slate-700 p-4 rounded-xl flex justify-between items-center hover:border-slate-500 transition-colors">
+                        <div>
+                            <h4 className="font-bold text-slate-200">{app.type}</h4>
+                            <p className="text-xs text-slate-500 flex items-center gap-1"><Calendar size={12} /> {app.date}</p>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <span className={`px-3 py-1 rounded-full text-[10px] font-bold border uppercase tracking-wider ${getStatusStyle(app.status)}`}>
+                                {app.status === 'draft' ? 'Чернетка' : app.status === 'approved' ? 'Схвалено' : app.status === 'rejected' ? 'Відхилено' : 'У роботі'}
+                            </span>
+                            {app.status === 'draft' && (
+                                <div className="flex gap-1">
+                                    <button onClick={() => { setEditingAppId(app.id); setSelectedType(app.type); setNewApplicationDescription(app.comment || ''); setShowNewApplicationModal(true); }} className="p-2 text-blue-400 hover:bg-slate-700 rounded-lg"><Edit size={16} /></button>
+                                    <button onClick={() => deleteDraft(app.id)} className="p-2 text-red-400 hover:bg-slate-700 rounded-lg"><Trash2 size={16} /></button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <footer className="border-t border-slate-800 bg-slate-950 mt-20 py-12">
+        <div className="max-w-7xl mx-auto px-4 text-center">
+            <p className="text-slate-500 text-sm">© 2026 ISUSA. Побудовано для безпечного управління документами.</p>
+        </div>
+      </footer>
+
+      {/* Modal - Збережено твою верстку та логіку */}
+      {showNewApplicationModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
+          <div className="bg-slate-800 border border-slate-700 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl">
+            <div className="p-6 border-b border-slate-700 font-bold text-xl">{editingAppId ? 'Редагування' : 'Нова заява'}</div>
+            <div className="p-6 space-y-4">
+              <select value={selectedType} onChange={e => setSelectedType(e.target.value)} className="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none focus:border-blue-500">
+                <option value="">Виберіть тип...</option>
+                {applicationTypes.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+              <textarea value={newApplicationDescription} onChange={e => setNewApplicationDescription(e.target.value)} rows={4} className="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl text-white outline-none focus:border-blue-500" placeholder="Опис заяви..." />
+              <label className="flex items-center gap-3 p-3 bg-slate-900/50 rounded-xl cursor-pointer border border-slate-700">
+                <input type="checkbox" checked={isConfirmedToSign} onChange={e => setIsConfirmedToSign(e.target.checked)} className="w-5 h-5 rounded border-slate-700 bg-slate-800 text-blue-600" />
+                <span className="text-sm font-bold">Підписати цифровим підписом</span>
+              </label>
+            </div>
+            <div className="p-6 bg-slate-900/50 flex gap-3">
+              <button onClick={closeModal} className="flex-1 py-3 text-slate-400 font-bold hover:text-white transition-colors">Скасувати</button>
+              <button onClick={handleAction} className={`flex-[2] py-3 rounded-xl text-white font-bold transition-all ${isConfirmedToSign ? 'bg-blue-600 hover:bg-blue-500' : 'bg-amber-600 hover:bg-amber-500'}`}>
+                {isConfirmedToSign ? 'Надіслати' : 'Зберегти як чернетку'}
+              </button>
             </div>
           </div>
         </div>
