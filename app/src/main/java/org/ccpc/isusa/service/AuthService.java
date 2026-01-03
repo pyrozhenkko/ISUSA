@@ -1,5 +1,6 @@
 package org.ccpc.isusa.service;
 
+import org.ccpc.isusa.dto.request.AdminCreateRequestDto;
 import org.ccpc.isusa.dto.request.LoginRequestDto;
 import org.ccpc.isusa.dto.request.StudentRegistrationRequestDto;
 import org.ccpc.isusa.dto.response.LoginResponseDto;
@@ -202,5 +203,49 @@ public class AuthService {
         // 4. Видаляємо використаний токен
         tokenRepository.delete(resetToken);
     }
+
+    @Transactional
+    public void createAdmin(AdminCreateRequestDto request) {
+
+        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
+            throw new RuntimeException("Username already exists");
+        }
+
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new RuntimeException("Email already exists");
+        }
+
+        Role adminRole = roleRepository.findByRoleName("ADMIN")
+                .orElseThrow(() -> new RuntimeException("ADMIN role not found"));
+
+        User user = new User();
+
+        user.setUsername(request.getUsername());
+        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+
+        user.setEmail(request.getEmail());
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        user.setMiddleName(request.getMiddleName());
+
+        user.setFaculty(request.getFaculty());
+        user.setDepartment(request.getDepartment());
+        user.setPosition(request.getPosition());
+
+        user.setPhoneNumber(
+                request.getPhoneNumber() != null ? request.getPhoneNumber() : "N/A"
+        );
+
+        user.setDateOfBirth(request.getDateOfBirth());
+        user.setRole(adminRole);
+
+        user.setIsActive(true);
+        user.setIsDeleted(false);
+        user.setFailedLoginAttempts(0);
+        user.setPasswordChangedDate(LocalDateTime.now());
+
+        userRepository.save(user);
+    }
+
 
 }

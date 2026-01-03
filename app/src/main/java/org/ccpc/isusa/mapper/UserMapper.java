@@ -23,6 +23,7 @@ public interface UserMapper {
     // === Ігноруємо ТІЛЬКИ те, що генерується автоматично або не приходить з фронту ===
     @Mapping(target = "userId", ignore = true)
     @Mapping(target = "role", ignore = true)
+
     @Mapping(target = "passwordHash", ignore = true)
     @Mapping(target = "profileImageId", ignore = true)
     @Mapping(target = "position", ignore = true)
@@ -54,4 +55,6 @@ public interface UserMapper {
     // department, faculty, firstName, lastName, middleName, phoneNumber
     // замапляться автоматично, бо імена полів збігаються.
     User toUserEntity(StudentRegistrationRequestDto dto);
+
+
 }

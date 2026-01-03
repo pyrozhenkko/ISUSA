@@ -1,6 +1,8 @@
 package org.ccpc.isusa.service;
 
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ccpc.isusa.dto.request.StudentRegistrationRequestDto;
@@ -18,6 +20,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -60,15 +63,26 @@ public class AdminService {
             throw new RegistrationException("Для створення студентів використовуйте createStudent");
         }
 
-        User user = createUserEntity(request.getUsername(), request.getPassword(), request.getFullName(), request.getEmail(), role);
+        // ОНОВЛЕНИЙ ВИКЛИК
+        User user = createUserEntity(
+                request.getUsername(),
+                request.getPassword(),
+                request.getFirstName(),
+                request.getLastName(),
+                request.getMiddleName(),
+                request.getEmail(),
+                role,
+                request.getFaculty(),
+                request.getDepartment(),
+                request.getPosition()
+        );
+
         User savedUser = userRepository.save(user);
 
-        // ЛОГ: Створення персоналу
         publishAudit(performer, "INFO", "Створено нового співробітника: " + savedUser.getUsername() + " (Роль: " + role.getRoleName() + ")", savedUser.getUserId());
 
         return userMapper.toResponseDto(savedUser);
     }
-
     /**
      * Створення СТУДЕНТА Адміном.
      */
@@ -133,17 +147,30 @@ public class AdminService {
     public UserResponseDto updateUser(Integer userId, UserUpdateRequestDto request, User performer) {
         User user = getUserOrThrow(userId);
 
-        if (request.getFullName() != null && !request.getFullName().isBlank()) {
-            String[] parts = request.getFullName().trim().split("\\s+", 3);
+        // --- ВИПРАВЛЕНО: Оновлюємо поля окремо ---
 
-            user.setLastName(parts[0]); // Прізвище
-            user.setFirstName(parts.length > 1 ? parts[1] : null); // Ім'я
-            user.setMiddleName(parts.length > 2 ? parts[2] : null); // По-батькові
+        if (request.getFirstName() != null && !request.getFirstName().isBlank()) {
+            user.setFirstName(request.getFirstName());
         }
+
+        if (request.getLastName() != null && !request.getLastName().isBlank()) {
+            user.setLastName(request.getLastName());
+        }
+
+        // По-батькові може бути пустим, тому просто null check або isBlank
+        if (request.getMiddleName() != null) {
+            user.setMiddleName(request.getMiddleName());
+        }
+        // ------------------------------------------
 
         if (request.getEmail() != null && !request.getEmail().isBlank()) {
             user.setEmail(request.getEmail());
         }
+
+        // Також можна додати оновлення професійних полів, якщо треба:
+        if (request.getFaculty() != null) user.setFaculty(request.getFaculty());
+        if (request.getDepartment() != null) user.setDepartment(request.getDepartment());
+        if (request.getPosition() != null) user.setPosition(request.getPosition());
 
         User savedUser = userRepository.save(user);
 
@@ -151,7 +178,6 @@ public class AdminService {
 
         return userMapper.toResponseDto(savedUser);
     }
-
     @Transactional
     public void resetPassword(Integer userId, String newPassword, User performer) {
         User user = getUserOrThrow(userId);
@@ -240,23 +266,45 @@ public class AdminService {
 
     // --- ХЕЛПЕРИ ---
 
-    private User createUserEntity(String username, String password, String fullName, String email, Role role) {
+    private User createUserEntity(
+            String username,
+            String password,
+            String firstName,
+            String lastName,
+            String middleName,
+            String email,
+            Role role,
+            String faculty,
+            String department,
+            String position    ) {
         User user = new User();
-        user.setUsername(username);
-        if (fullName != null && !fullName.isBlank()) {
-            String[] parts = fullName.trim().split("\\s+", 3);
 
-            user.setLastName(parts[0]); // Прізвище
-            user.setFirstName(parts.length > 1 ? parts[1] : null); // Ім'я
-            user.setMiddleName(parts.length > 2 ? parts[2] : null); // По-батькові
-        }
+        // 1. Основні дані
+        user.setUsername(username);
         user.setEmail(email);
         user.setPasswordHash(passwordEncoder.encode(password));
-        user.setIsActive(true);
+
+        // 2. Встановлюємо імена напряму (без розбиття split)
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
+        user.setMiddleName(middleName);
+
+        // 3. Налаштування акаунта
         user.setRole(role);
+        user.setIsActive(true);
+
+        // 4. Дефолтні значення (безпека)
+        user.setFailedLoginAttempts(0);
+        user.setIsDeleted(false);
+        user.setPasswordChangedDate(LocalDateTime.now());
+
+        // 5. Професійні дані
+        user.setFaculty(faculty);
+        user.setDepartment(department);
+        user.setPosition(position);
+
         return user;
     }
-
     private void validateUserNotExists(String username, String email) {
         if (userRepository.findByUsername(username).isPresent()) throw new RegistrationException("Username taken");
         if (userRepository.findByEmail(email).isPresent()) throw new RegistrationException("Email taken");
@@ -274,4 +322,6 @@ public class AdminService {
     private void publishAudit(User performer, String level, String message, Integer targetId) {
         eventPublisher.publishEvent(new AuditEvent(this, performer, level, message, "User", targetId));
     }
+
+
 }

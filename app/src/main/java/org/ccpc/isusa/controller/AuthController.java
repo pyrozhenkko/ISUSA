@@ -1,11 +1,13 @@
 package org.ccpc.isusa.controller;
 
 import jakarta.validation.Valid;
+import org.ccpc.isusa.dto.request.AdminCreateRequestDto;
 import org.ccpc.isusa.dto.request.LoginRequestDto;
 import org.ccpc.isusa.dto.request.StudentRegistrationRequestDto;
 import org.ccpc.isusa.dto.response.LoginResponseDto;
 import org.ccpc.isusa.service.AuthService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import lombok.RequiredArgsConstructor;
@@ -42,6 +44,7 @@ public class AuthController {
         return ResponseEntity.ok(authService.login(request));
     }
 
+
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@RequestParam String email) {
         authService.processForgotPassword(email);
@@ -53,4 +56,14 @@ public class AuthController {
         authService.resetPassword(token, newPassword);
         return ResponseEntity.ok("Пароль успішно змінено");
     }
+    @PostMapping("/admin/create")
+    @PreAuthorize("hasAuthority('user:manage')")
+    public ResponseEntity<?> createAdmin(
+            @Valid @RequestBody AdminCreateRequestDto request
+    ) {
+        authService.createAdmin(request);
+        return ResponseEntity.ok("ADMIN створено");
+    }
+
+
 }

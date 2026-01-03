@@ -5,7 +5,10 @@ import lombok.Data;
 
 @Data
 public class UserUpdateRequestDto {
-    private String fullName;
+    private String firstName;
+    private String middleName;
+    private String lastName;
+
 
     @Email
     private String email;
@@ -13,4 +16,7 @@ public class UserUpdateRequestDto {
     private String username;
 
     private String roleName;
+    private String department;
+    private String faculty;
+    private String position;
 }
