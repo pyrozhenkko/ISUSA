@@ -106,7 +106,7 @@ INSERT INTO users (
 VALUES (
            (SELECT roleid FROM roles WHERE role_name = 'ADMIN'),
            'admin',
-           '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
+           '$2a$10$kIaRs3P/j1DFqxjjThQEmOVQVcRmWVJpH8a2lSrCEPHV/0KLBRdiG',
            -- Значення 'Петренко Олександр Миколайович' ПРИБРАНО
            'Олександр',
            'Миколайович',
