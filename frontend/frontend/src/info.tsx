@@ -1,8 +1,7 @@
 import React from 'react';
 import { 
     BookOpen, Shield, Bell, LogOut, User, ArrowRight, 
-    BookMarked, FileEdit, Lock, TrendingUp, UserCircle, 
-    Github, LogIn,
+    BookMarked, FileEdit, Lock, TrendingUp, UserCircle, LogIn,
     MessageSquare, CheckCircle, Archive, CornerRightUp
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -16,7 +15,6 @@ interface InfoPageProps {
 
 const InfoPage: React.FC<InfoPageProps> = ({ isAuthenticated, handleLogout }) => {
     const navigate = useNavigate();
-    const userName = "Користувач системи";
 
     const handleAuthAction = () => {
         if (!isAuthenticated) {
@@ -83,7 +81,7 @@ const InfoPage: React.FC<InfoPageProps> = ({ isAuthenticated, handleLogout }) =>
                 <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
                     <div className="text-center max-w-4xl mx-auto">
                         <h1 className="text-5xl sm:text-6xl font-bold mb-6 text-white tracking-tight leading-tight">
-                            Ефективне управління
+                            Управління
                             <br />
                             <span className="text-blue-500 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">
                                 Студентськими Заявами

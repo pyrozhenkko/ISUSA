@@ -6,6 +6,7 @@ import {
   Edit3, Trash2, Shield, Bell, Zap, Upload,
   Home, Archive, Edit
 } from 'lucide-react';
+import Footer from './Footer';
 
 type UserRole = 'STUDENT' | 'LECTURER' | 'ADMIN';
 const API_BASE_URL = 'http://localhost:8081/api/applications'; 
@@ -87,7 +88,6 @@ const LecturerView: React.FC<StudentPortalProps> = ({ userRole, userId }) => {
     );
 };
 
-// --- ГОЛОВНИЙ ПОРТАЛ СТУДЕНТА ---
 const StudentPortal: React.FC<StudentPortalProps> = ({ handleLogout, userRole, userId }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'drafts' | 'active' | 'archive'>('overview');
   const [showNewApplicationModal, setShowNewApplicationModal] = useState(false);
@@ -198,7 +198,7 @@ const [notificationList, setNotificationList] = useState([
             method = 'PUT';
         }
     } else if (isConfirmedToSign) {
-        url = `${API_BASE_URL}/sign-submit`;
+        url = `${API_BASE_URL}/sign-and-submit`;
         body.password = "USER_CONFIRMED";
     }
 
@@ -275,7 +275,10 @@ const [notificationList, setNotificationList] = useState([
                     <Shield className="absolute inset-0 w-10 h-10 text-emerald-500 opacity-30" strokeWidth={1} />
                 </div>
                 <span className="text-xl font-bold tracking-tight text-white">ISUSA</span>
+                <span className="text-slate-600">/</span>
+              <span className="text-sm text-slate-400">Account</span>
             </Link>
+            
 
             <div className="flex items-center gap-4">
                 <div className="relative"> 
@@ -450,11 +453,7 @@ const [notificationList, setNotificationList] = useState([
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-slate-800 bg-slate-950 mt-20 py-12">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-            <p className="text-slate-500 text-sm">© 2026 ISUSA. Побудовано для безпечного управління документами.</p>
-        </div>
-      </footer>
+      <Footer />
 
       {/* Modal - Збережено твою верстку та логіку */}
       {showNewApplicationModal && (

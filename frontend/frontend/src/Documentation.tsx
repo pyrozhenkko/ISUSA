@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   BookOpen, 
   Shield, 
@@ -16,14 +17,16 @@ import {
   Code,
   Download,
   Github,
-  ExternalLink,
   CheckCircle,
   AlertCircle
 } from 'lucide-react';
+import Footer from './Footer';
 
 export default function Documentation() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeSection, setActiveSection] = useState('getting-started');
+  // Стан для відкритої статті
+  const [activeArticle, setActiveArticle] = useState<string | null>(null);
 
   const sections = [
     {
@@ -31,10 +34,30 @@ export default function Documentation() {
       title: 'Початок роботи',
       icon: Rocket,
       articles: [
-        { id: 'intro', title: 'Вступ до ISUSA', time: '5 хв' },
-        { id: 'registration', title: 'Реєстрація в системі', time: '3 хв' },
-        { id: 'first-application', title: 'Перша заява', time: '10 хв' },
-        { id: 'interface', title: 'Огляд інтерфейсу', time: '7 хв' }
+        { 
+          id: 'intro', 
+          title: 'Вступ до ISUSA', 
+          time: '1 хв',
+          content: 'ISUSA — це система управління студентськими заявами. Вона дозволяє подавати документи онлайн, відстежувати їх статус та отримувати рішення без відвідування деканату.' 
+        },
+        { 
+          id: 'registration', 
+          title: 'Реєстрація в системі', 
+          time: '2 хв',
+          content: 'Вхід здійснюється через корпоративну пошту університету. Ваші дані (група, курс) підтягуються автоматично з бази даних.' 
+        },
+        { 
+          id: 'first-application', 
+          title: 'Перша заява', 
+          time: '2 хв',
+          content: 'Натисніть "Нова заява", оберіть тип документа та заповніть поля. Система перевірить коректність даних перед відправкою.' 
+        },
+        { 
+          id: 'interface', 
+          title: 'Огляд інтерфейсу', 
+          time: '1 хв',
+          content: 'Основні розділи: "Мої заяви" (список поданих документів), "Чернетки" (незавершені заяви) та "Профіль" (налаштування).' 
+        }
       ]
     },
     {
@@ -42,11 +65,36 @@ export default function Documentation() {
       title: 'Робота із заявами',
       icon: FileText,
       articles: [
-        { id: 'create', title: 'Створення заяви', time: '8 хв' },
-        { id: 'drafts', title: 'Чернетки та автозбереження', time: '5 хв' },
-        { id: 'signing', title: 'Цифровий підпис документів', time: '12 хв' },
-        { id: 'tracking', title: 'Відстеження статусу', time: '6 хв' },
-        { id: 'templates', title: 'Шаблони заяв', time: '10 хв' }
+        { 
+          id: 'create', 
+          title: 'Створення заяви', 
+          time: '3 хв',
+          content: 'Оберіть потрібний тип заяви зі списку. Поля, позначені зірочкою, є обов’язковими. Ви можете додати коментар для деканату.' 
+        },
+        { 
+          id: 'drafts', 
+          title: 'Чернетки та автозбереження', 
+          time: '2 хв',
+          content: 'Якщо ви закриєте вікно створення, заява збережеться в чернетках. Ви можете повернутись до редагування в будь-який момент.' 
+        },
+        { 
+          id: 'signing', 
+          title: 'Цифровий підпис документів', 
+          time: '2 хв',
+          content: 'Для подачі заяви потрібно накласти цифровий підпис (RSA). Це гарантує, що документ подали саме ви і він не був змінений.' 
+        },
+        { 
+          id: 'tracking', 
+          title: 'Відстеження статусу', 
+          time: '4 хв',
+          content: 'Статуси: "Нова" -> "На розгляді" -> "Схвалено"/"Відхилено". Ви отримаєте сповіщення при зміні статусу.' 
+        },
+        { 
+          id: 'templates', 
+          title: 'Шаблони заяв', 
+          time: '1 хв',
+          content: 'Ви можете використовувати готові шаблони для найпопулярніших запитів (довідка про навчання, матеріальна допомога тощо).' 
+        }
       ]
     },
     {
@@ -54,10 +102,30 @@ export default function Documentation() {
       title: 'Безпека',
       icon: Lock,
       articles: [
-        { id: 'authentication', title: 'Аутентифікація', time: '7 хв' },
-        { id: 'rsa-signing', title: 'RSA-2048 підпис', time: '15 хв' },
-        { id: 'data-protection', title: 'Захист даних', time: '10 хв' },
-        { id: 'two-factor', title: 'Двофакторна автентифікація', time: '8 хв' }
+        { 
+          id: 'authentication', 
+          title: 'Аутентифікація', 
+          time: '2 хв',
+          content: 'Ми використовуємо безпечні токени доступу (JWT). Сесія автоматично завершується через 24 години бездіяльності.' 
+        },
+        { 
+          id: 'rsa-signing', 
+          title: 'RSA-2048 підпис', 
+          time: '5 хв',
+          content: 'Ваш приватний ключ зберігається тільки у вас. Сервер отримує лише підписаний хеш документа для перевірки автентичності.' 
+        },
+        { 
+          id: 'data-protection', 
+          title: 'Захист даних', 
+          time: '3 хв',
+          content: 'Всі дані передаються через захищене з\'єднання (HTTPS) та зберігаються в зашифрованому вигляді.' 
+        },
+        { 
+          id: 'two-factor', 
+          title: 'Двофакторна автентифікація', 
+          time: '2 хв',
+          content: 'Рекомендуємо увімкнути 2FA в налаштуваннях профілю для додаткового захисту акаунту.' 
+        }
       ]
     },
     {
@@ -65,10 +133,30 @@ export default function Documentation() {
       title: 'Налаштування профілю',
       icon: Settings,
       articles: [
-        { id: 'edit-profile', title: 'Редагування профілю', time: '5 хв' },
-        { id: 'avatar', title: 'Завантаження аватара', time: '3 хв' },
-        { id: 'notifications', title: 'Налаштування сповіщень', time: '6 хв' },
-        { id: 'password', title: 'Зміна паролю', time: '4 хв' }
+        { 
+          id: 'edit-profile', 
+          title: 'Редагування профілю', 
+          time: '5 хв',
+          content: 'Ви можете змінити контактний email та завантажити нове фото. Академічні дані змінюються через звернення в деканат.' 
+        },
+        { 
+          id: 'avatar', 
+          title: 'Завантаження аватара', 
+          time: '3 хв',
+          content: 'Підтримуються формати JPG та PNG. Фото використовується для ідентифікації в системі.' 
+        },
+        { 
+          id: 'notifications', 
+          title: 'Налаштування сповіщень', 
+          time: '2 хв',
+          content: 'Виберіть, які сповіщення ви хочете отримувати (email, push) та для яких подій (зміна статусу, нові повідомлення).' 
+        },
+        { 
+          id: 'password', 
+          title: 'Зміна паролю', 
+          time: '4 хв',
+          content: 'Змінити пароль можна в налаштуваннях безпеки. Новий пароль має бути надійним (мінімум 8 символів).' 
+        }
       ]
     },
     {
@@ -76,10 +164,30 @@ export default function Documentation() {
       title: 'API та інтеграції',
       icon: Code,
       articles: [
-        { id: 'api-intro', title: 'Вступ до API', time: '10 хв' },
-        { id: 'authentication-api', title: 'API аутентифікація', time: '12 хв' },
-        { id: 'endpoints', title: 'Доступні endpoints', time: '20 хв' },
-        { id: 'webhooks', title: 'Webhooks', time: '15 хв' }
+        { 
+          id: 'api-intro', 
+          title: 'Вступ до API', 
+          time: '4 хв',
+          content: 'ISUSA надає REST API для інтеграції. Документація доступна для розробників після отримання API ключа.' 
+        },
+        { 
+          id: 'authentication-api', 
+          title: 'API аутентифікація', 
+          time: '1 хв',
+          content: 'Використовування Bearer Token у заголовку Authorization для всіх запитів до захищених ресурсів.' 
+        },
+        { 
+          id: 'endpoints', 
+          title: 'Доступні endpoints', 
+          time: '4 хв',
+          content: 'Основні ресурси: /applications, /users, /sign. Детальний опис параметрів дивіться у Swagger UI.' 
+        },
+        { 
+          id: 'webhooks', 
+          title: 'Webhooks', 
+          time: '5 хв',
+          content: 'Налаштування вебхуків для отримання повідомлень про події системи в реальному часі.' 
+        }
       ]
     },
     {
@@ -87,18 +195,33 @@ export default function Documentation() {
       title: 'FAQ',
       icon: HelpCircle,
       articles: [
-        { id: 'common-issues', title: 'Поширені проблеми', time: '8 хв' },
-        { id: 'troubleshooting', title: 'Усунення неполадок', time: '12 хв' },
-        { id: 'contact-support', title: 'Зв\'язок з підтримкою', time: '3 хв' }
+        { 
+          id: 'common-issues', 
+          title: 'Поширені проблеми', 
+          time: '2 хв',
+          content: 'Якщо сторінка не завантажується, спробуйте очистити кеш браузера або перевірити підключення до мережі.' 
+        },
+        { 
+          id: 'troubleshooting', 
+          title: 'Усунення неполадок', 
+          time: '2 хв',
+          content: 'При виникненні помилок зробіть скріншот та надішліть його в службу підтримки разом з описом проблеми.' 
+        },
+        { 
+          id: 'contact-support', 
+          title: 'Зв\'язок з підтримкою', 
+          time: '3 хв',
+          content: 'Зв\'язатися з нами можна через форму зворотного зв\'язку або написавши на support@isusa.edu.' 
+        }
       ]
     }
   ];
 
   const quickLinks = [
-    { title: 'Швидкий старт', description: 'Розпочніть роботу за 5 хвилин', icon: Rocket, color: 'blue' },
-    { title: 'API Reference', description: 'Повна документація API', icon: Code, color: 'emerald' },
-    { title: 'Завантажити SDK', description: 'Бібліотеки для розробників', icon: Download, color: 'purple' },
-    { title: 'GitHub', description: 'Вихідний код проєкту', icon: Github, color: 'slate' }
+    { title: 'Швидкий старт', link: '/', description: 'Розпочніть роботу за 5 хвилин', icon: Rocket, color: 'blue' },
+    { title: 'API Reference', link: 'https://restfulapi.net', description: 'Повна документація API', icon: Code, color: 'emerald' },
+    { title: 'Завантажити SDK', link: 'https://learn.microsoft.com/uk-ua/windows/apps/windows-app-sdk/downloads', description: 'Бібліотеки для розробників', icon: Download, color: 'purple' },
+    { title: 'GitHub', link: 'https://github.com/pyrozhenkko/ISUSA', description: 'Вихідний код проєкту', icon: Github, color: 'slate' }
   ];
 
   const getColorClasses = (color: string) => {
@@ -111,6 +234,11 @@ export default function Documentation() {
     return colors[color as keyof typeof colors] || colors.blue;
   };
 
+  // Функція для перемикання стану статті
+  const toggleArticle = (id: string) => {
+    setActiveArticle(activeArticle === id ? null : id);
+  };
+
   return (
     <div className="min-h-screen bg-slate-900 text-white">
       {/* Header */}
@@ -119,20 +247,22 @@ export default function Documentation() {
           <div className="flex items-center justify-between h-16">
             {/* Logo and Brand */}
             <div className="flex items-center gap-3">
-              <div className="relative w-10 h-10">
-                <BookOpen className="absolute inset-0 w-6 h-6 m-auto text-blue-500" strokeWidth={1.5} />
-                <Shield className="absolute inset-0 w-10 h-10 text-emerald-500 opacity-30" strokeWidth={1} />
-              </div>
-              <span className="text-xl tracking-tight">ISUSA</span>
+              <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                <div className="relative w-10 h-10 flex items-center justify-center">
+                  <BookOpen className="absolute inset-0 w-6 h-6 m-auto text-blue-500" strokeWidth={1.5} />
+                  <Shield className="absolute inset-0 w-10 h-10 text-emerald-500 opacity-30" strokeWidth={1} />
+                </div>
+                <span className="text-xl font-bold tracking-tight text-white">ISUSA</span>
+              </Link>
               <span className="text-slate-600">/</span>
               <span className="text-sm text-slate-400">Docs</span>
             </div>
 
             {/* Right Side Actions */}
             <div className="flex items-center gap-4">
-              <a href="/" className="text-sm text-slate-400 hover:text-white transition-colors">
+              <Link to="/" className="text-sm text-slate-400 hover:text-white transition-colors">
                 Головна
-              </a>
+              </Link>
               <button className="w-8 h-8 rounded-full bg-slate-700 border border-slate-600 flex items-center justify-center hover:bg-slate-600 transition-colors">
                 <User className="w-4 h-4 text-slate-300" />
               </button>
@@ -182,7 +312,7 @@ export default function Documentation() {
             {quickLinks.map((link, index) => (
               <a
                 key={index}
-                href="#"
+                href={link.link}
                 className="bg-slate-800 border border-slate-700 rounded-lg p-6 hover:border-slate-600 transition-colors group"
               >
                 <div className={`inline-flex p-3 border rounded-lg mb-4 ${getColorClasses(link.color)}`}>
@@ -208,7 +338,10 @@ export default function Documentation() {
                 {sections.map((section) => (
                   <div key={section.id}>
                     <button
-                      onClick={() => setActiveSection(section.id)}
+                      onClick={() => {
+                        setActiveSection(section.id);
+                        setActiveArticle(null); // Закриваємо статті при перемиканні розділу
+                      }}
                       className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${
                         activeSection === section.id
                           ? 'bg-blue-600/10 text-blue-500 border border-blue-600/20'
@@ -226,11 +359,8 @@ export default function Documentation() {
 
           {/* Content Area */}
           <main className="lg:col-span-3">
-            {sections.map((section) => (
-              <div
-                key={section.id}
-                className={activeSection === section.id ? 'block' : 'hidden'}
-              >
+            {sections.filter(s => s.id === activeSection).map((section) => (
+              <div key={section.id} className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="mb-8">
                   <div className="flex items-center gap-3 mb-2">
                     <section.icon className="w-8 h-8 text-blue-500" />
@@ -243,23 +373,41 @@ export default function Documentation() {
 
                 <div className="space-y-3">
                   {section.articles.map((article) => (
-                    <a
+                    <div 
                       key={article.id}
-                      href="#"
-                      className="block bg-slate-800 border border-slate-700 rounded-lg p-5 hover:border-slate-600 transition-colors group"
+                      className={`block bg-slate-800 border rounded-lg overflow-hidden transition-all duration-200 cursor-pointer ${
+                        activeArticle === article.id ? 'border-blue-500/50 ring-1 ring-blue-500/20' : 'border-slate-700 hover:border-slate-600'
+                      }`}
+                      onClick={() => toggleArticle(article.id)}
                     >
-                      <div className="flex items-center justify-between">
+                      {/* Заголовок статті */}
+                      <div className="p-5 flex items-center justify-between group">
                         <div className="flex-1">
-                          <h3 className="text-white mb-1 group-hover:text-blue-500 transition-colors">
+                          <h3 className={`mb-1 transition-colors ${activeArticle === article.id ? 'text-blue-400' : 'text-white group-hover:text-blue-500'}`}>
                             {article.title}
                           </h3>
                           <p className="text-sm text-slate-500">
-                            Час читання: {article.time}
+                            Обсяг: {article.time}
                           </p>
                         </div>
-                        <ChevronRight className="w-5 h-5 text-slate-600 group-hover:text-blue-500 transition-colors" />
+                        <ChevronRight 
+                          className={`w-5 h-5 text-slate-600 transition-transform duration-300 ${
+                            activeArticle === article.id ? 'rotate-90 text-blue-500' : 'group-hover:text-blue-500'
+                          }`} 
+                        />
                       </div>
-                    </a>
+
+                      {/* Тіло статті (Акордеон) */}
+                      <div 
+                        className={`transition-all duration-300 ease-in-out bg-slate-800/50 ${
+                          activeArticle === article.id ? 'max-h-96 opacity-100 border-t border-slate-700/50' : 'max-h-0 opacity-0'
+                        }`}
+                      >
+                        <div className="px-5 pb-6 pt-4 text-slate-400 text-sm leading-relaxed">
+                          {article.content}
+                        </div>
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -278,13 +426,13 @@ export default function Documentation() {
                   </p>
                   <div className="flex flex-wrap gap-3">
                     <a
-                      href="#"
+                      href="https://mail.google.com/mail/u/1/#inbox?compose=CllgCJfttqHwjhlrssGmJTtztPvRHxjttvklgwrCHfqFnHTxzNlfCJmKNPvcwvqCBbVwjFqMzsq"
                       className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors border border-blue-700"
                     >
                       Зв'язатися з підтримкою
                     </a>
                     <a
-                      href="#"
+                      href="https://github.com/IvanOmeliash"
                       className="inline-flex items-center gap-2 px-4 py-2 border border-slate-700 hover:bg-slate-800 text-slate-300 rounded-lg transition-colors"
                     >
                       <Github className="w-4 h-4" />
@@ -339,86 +487,7 @@ export default function Documentation() {
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-slate-800 bg-slate-950">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-            <div>
-              <h4 className="text-sm mb-4 text-slate-300">Project</h4>
-              <ul className="space-y-3">
-                <li>
-                  <a href="#" className="text-sm text-slate-500 hover:text-blue-500 transition-colors">
-                    About ISUSA
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-sm text-slate-500 hover:text-blue-500 transition-colors flex items-center gap-2">
-                    <Github className="w-4 h-4" />
-                    GitHub Repository
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-sm text-slate-500 hover:text-blue-500 transition-colors flex items-center gap-2">
-                    <span className="inline-block w-2 h-2 bg-emerald-500 rounded-full"></span>
-                    System Status
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="text-sm mb-4 text-slate-300">Legal</h4>
-              <ul className="space-y-3">
-                <li>
-                  <a href="#" className="text-sm text-slate-500 hover:text-blue-500 transition-colors flex items-center gap-2">
-                    <Shield className="w-4 h-4" />
-                    Privacy Policy
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-sm text-slate-500 hover:text-blue-500 transition-colors">
-                    Terms of Service
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-sm text-slate-500 hover:text-blue-500 transition-colors">
-                    Security Standards
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="text-sm mb-4 text-slate-300">Contact</h4>
-              <ul className="space-y-3">
-                <li>
-                  <a href="#" className="text-sm text-slate-500 hover:text-blue-500 transition-colors">
-                    University Support
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-sm text-slate-500 hover:text-blue-500 transition-colors flex items-center gap-2">
-                    Feedback Form
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="mt-12 pt-8 border-t border-slate-800">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <p className="text-sm text-slate-600">
-                © 2026 ISUSA. Built for secure student application management.
-              </p>
-              <div className="flex items-center gap-2 text-xs text-slate-600">
-                <Shield className="w-4 h-4" />
-                <span>Encrypted with RSA-2048</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

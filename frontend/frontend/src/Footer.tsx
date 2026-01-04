@@ -50,7 +50,7 @@ const Footer = () => {
                         </Link>
                     </li>
                     <li>
-                        <Link to="/status" className="text-sm text-slate-500 hover:text-blue-500 transition-colors">
+                        <Link to="/security" className="text-sm text-slate-500 hover:text-blue-500 transition-colors">
                         Статус системи
                         </Link>
                     </li>

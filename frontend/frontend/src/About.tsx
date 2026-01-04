@@ -1,4 +1,4 @@
-import React from 'react';
+import { Link } from 'react-router-dom';
 import { 
   BookOpen, 
   Shield, 
@@ -15,6 +15,7 @@ import {
   Github,
   ExternalLink
 } from 'lucide-react';
+import Footer from './Footer';
 
 import NazarPhoto from './assets/Nazar.jpg';
 import IvanPhoto from './assets/Ivan.jpg';
@@ -65,11 +66,15 @@ export default function About() {
           <div className="flex items-center justify-between h-16">
             {/* Logo and Brand */}
             <div className="flex items-center gap-3">
-              <div className="relative w-10 h-10">
-                <BookOpen className="absolute inset-0 w-6 h-6 m-auto text-blue-500" strokeWidth={1.5} />
-                <Shield className="absolute inset-0 w-10 h-10 text-emerald-500 opacity-30" strokeWidth={1} />
-              </div>
-              <span className="text-xl tracking-tight">ISUSA</span>
+                        <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                            <div className="relative w-10 h-10 flex items-center justify-center">
+                                <BookOpen className="absolute inset-0 w-6 h-6 m-auto text-blue-500" strokeWidth={1.5} />
+                                <Shield className="absolute inset-0 w-10 h-10 text-emerald-500 opacity-30" strokeWidth={1} />
+                            </div>
+                            <span className="text-xl font-bold tracking-tight text-white">ISUSA</span>
+                        </Link>
+              <span className="text-slate-600">/</span>
+              <span className="text-sm text-slate-400">About</span>
             </div>
 
             {/* Right Side Actions */}
@@ -305,86 +310,7 @@ export default function About() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-800 bg-slate-950">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-            <div>
-              <h4 className="text-sm mb-4 text-slate-300">Project</h4>
-              <ul className="space-y-3">
-                <li>
-                  <a href="#" className="text-sm text-slate-500 hover:text-blue-500 transition-colors">
-                    About ISUSA
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-sm text-slate-500 hover:text-blue-500 transition-colors flex items-center gap-2">
-                    <Github className="w-4 h-4" />
-                    GitHub Repository
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-sm text-slate-500 hover:text-blue-500 transition-colors flex items-center gap-2">
-                    <span className="inline-block w-2 h-2 bg-emerald-500 rounded-full"></span>
-                    System Status
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="text-sm mb-4 text-slate-300">Legal</h4>
-              <ul className="space-y-3">
-                <li>
-                  <a href="#" className="text-sm text-slate-500 hover:text-blue-500 transition-colors flex items-center gap-2">
-                    <Shield className="w-4 h-4" />
-                    Privacy Policy
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-sm text-slate-500 hover:text-blue-500 transition-colors">
-                    Terms of Service
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-sm text-slate-500 hover:text-blue-500 transition-colors">
-                    Security Standards
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="text-sm mb-4 text-slate-300">Contact</h4>
-              <ul className="space-y-3">
-                <li>
-                  <a href="#" className="text-sm text-slate-500 hover:text-blue-500 transition-colors">
-                    University Support
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-sm text-slate-500 hover:text-blue-500 transition-colors flex items-center gap-2">
-                    Feedback Form
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="mt-12 pt-8 border-t border-slate-800">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <p className="text-sm text-slate-600">
-                © 2026 ISUSA. Built for secure student application management.
-              </p>
-              <div className="flex items-center gap-2 text-xs text-slate-600">
-                <Shield className="w-4 h-4" />
-                <span>Encrypted with RSA-2048</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
