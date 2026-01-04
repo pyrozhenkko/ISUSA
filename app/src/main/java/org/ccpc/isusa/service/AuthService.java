@@ -1,7 +1,7 @@
 package org.ccpc.isusa.service;
 
-import org.ccpc.isusa.dto.request.AdminCreateRequestDto;
 import org.ccpc.isusa.dto.request.LoginRequestDto;
+import org.ccpc.isusa.dto.request.StaffCreateRequestDto;
 import org.ccpc.isusa.dto.request.StudentRegistrationRequestDto;
 import org.ccpc.isusa.dto.response.LoginResponseDto;
 import org.ccpc.isusa.entity.main.PasswordResetToken;
@@ -205,7 +205,7 @@ public class AuthService {
     }
 
     @Transactional
-    public void createAdmin(AdminCreateRequestDto request) {
+    public void createStaff(StaffCreateRequestDto request) {
 
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
             throw new RuntimeException("Username already exists");
@@ -214,9 +214,16 @@ public class AuthService {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new RuntimeException("Email already exists");
         }
-
-        Role adminRole = roleRepository.findByRoleName("ADMIN")
-                .orElseThrow(() -> new RuntimeException("ADMIN role not found"));
+        Role role = null;
+        if (request.getRole().equals("ADMIN")) {
+            role = roleRepository.findByRoleName("ADMIN")
+                    .orElseThrow(() -> new RuntimeException("ADMIN role not found"));
+        }
+        if (request.getRole().equals("DEANERY_STAFF")) {
+            role = roleRepository.findByRoleName("DEANERY_STAFF")
+                    .orElseThrow(() -> new RuntimeException("DEANERY_STAFF role not found"));
+            
+        }
 
         User user = new User();
 
@@ -237,7 +244,7 @@ public class AuthService {
         );
 
         user.setDateOfBirth(request.getDateOfBirth());
-        user.setRole(adminRole);
+        user.setRole(role);
 
         user.setIsActive(true);
         user.setIsDeleted(false);

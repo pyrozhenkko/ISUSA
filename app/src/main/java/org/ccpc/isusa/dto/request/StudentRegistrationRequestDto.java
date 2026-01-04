@@ -24,7 +24,6 @@ public class StudentRegistrationRequestDto {
     @NotBlank(message = "Email is required")
     private String email;
 
-    // === Нові поля замість fullName ===
     @NotBlank(message = "First name is required")
     private String firstName;
 

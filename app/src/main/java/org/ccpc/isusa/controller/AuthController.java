@@ -1,8 +1,8 @@
 package org.ccpc.isusa.controller;
 
 import jakarta.validation.Valid;
-import org.ccpc.isusa.dto.request.AdminCreateRequestDto;
 import org.ccpc.isusa.dto.request.LoginRequestDto;
+import org.ccpc.isusa.dto.request.StaffCreateRequestDto;
 import org.ccpc.isusa.dto.request.StudentRegistrationRequestDto;
 import org.ccpc.isusa.dto.response.LoginResponseDto;
 import org.ccpc.isusa.service.AuthService;
@@ -56,14 +56,13 @@ public class AuthController {
         authService.resetPassword(token, newPassword);
         return ResponseEntity.ok("Пароль успішно змінено");
     }
-    @PostMapping("/admin/create")
+    @PostMapping("/staff/create")
     @PreAuthorize("hasAuthority('user:manage')")
     public ResponseEntity<?> createAdmin(
-            @Valid @RequestBody AdminCreateRequestDto request
+            @Valid @RequestBody StaffCreateRequestDto request
     ) {
-        authService.createAdmin(request);
-        return ResponseEntity.ok("ADMIN створено");
+        authService.createStaff(request);
+        return ResponseEntity.ok(request.getRole() + " створено");
     }
-
 
 }
