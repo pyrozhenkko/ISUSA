@@ -9,10 +9,13 @@ import org.ccpc.isusa.dto.response.ApplicationResponseDto;
 import org.ccpc.isusa.dto.response.UserActivityReportDto;
 import org.ccpc.isusa.dto.response.UserResponseDto;
 import org.ccpc.isusa.entity.main.User; // Твоя сутність
+import org.ccpc.isusa.repository.main.UserRepository;
 import org.ccpc.isusa.service.AdminService;
+import org.ccpc.isusa.service.CurrentUserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal; // Для отримання виконавця
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,16 +28,19 @@ import java.util.Map;
 public class AdminController {
 
     private final AdminService adminService;
+    private  final UserRepository userRepository;
+    private final CurrentUserService currentUserService;
 
     // --- СТВОРЕННЯ ---
-
     @PostMapping("/users/staff")
     public ResponseEntity<UserResponseDto> createStaff(
             @Valid @RequestBody UserCreateRequestDto request,
-            @AuthenticationPrincipal User admin
+            @AuthenticationPrincipal UserDetails principal
     ) {
-        return ResponseEntity.ok(adminService.createStaff(request, admin));
+        User performer = currentUserService.getCurrentUser(principal);
+        return ResponseEntity.ok(adminService.createStaff(request, performer));
     }
+
 
     @PostMapping("/users/student")
     public ResponseEntity<UserResponseDto> createStudent(
@@ -52,7 +58,7 @@ public class AdminController {
             @RequestBody UserUpdateRequestDto request,
             @AuthenticationPrincipal User admin
     ) {
-        return ResponseEntity.ok(adminService.updateUser(id, request, admin));
+        return ResponseEntity.ok(adminService.updateStaff(id, request, admin));
     }
 
     @PostMapping("/users/{id}/toggle-active")
@@ -85,8 +91,12 @@ public class AdminController {
     @PostMapping("/users/{id}/restore")
     public ResponseEntity<Void> restoreDeletedUser(
             @PathVariable Integer id,
-            @AuthenticationPrincipal User admin
+            @AuthenticationPrincipal UserDetails principal // 1. Приймаємо UserDetails
     ) {
+        // 2. Конвертуємо в сутність User через твій сервіс
+        User admin = currentUserService.getCurrentUser(principal);
+
+        // 3. Передаємо в сервіс
         adminService.restoreDeletedUser(id, admin);
         return ResponseEntity.ok().build();
     }

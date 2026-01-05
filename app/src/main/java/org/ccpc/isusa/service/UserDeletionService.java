@@ -102,12 +102,12 @@ public class UserDeletionService {
      */
     private void publishAudit(User performer, String level, String message, Integer targetUserId) {
         eventPublisher.publishEvent(new AuditEvent(
-                this,           // source
-                performer,      // хто видалив
-                level,          // INFO/WARN
-                message,        // Опис дії
-                "User",         // Тип сутності
-                targetUserId    // ID видаленого користувача
+                this,
+                performer,
+                level,
+                message,
+                "User",
+                targetUserId
         ));
     }
 }

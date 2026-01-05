@@ -1,8 +1,6 @@
 package org.ccpc.isusa.service;
 
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ccpc.isusa.dto.request.StudentRegistrationRequestDto;
@@ -118,19 +116,32 @@ public class AdminService {
      */
     @Transactional
     public void deleteUser(Integer userId, User performer) {
-        // Виклик оновленого UserDeletionService з performer
         userDeletionService.softDeleteUser(userId, performer);
     }
 
     /**
      * Відновлення видаленого користувача.
      */
-    @Transactional
     public void restoreDeletedUser(Integer userId, User performer) {
-        // Виклик оновленого UserDeletionService з performer
-        userDeletionService.restoreDeletedUser(userId, performer);
-    }
+        // Використовуємо спеціальний метод пошуку
+        User user = userRepository.findUserEvenIfDeleted(userId)
+                .orElseThrow(() -> new EntityNotFoundException("Користувача не знайдено (навіть серед видалених)"));
 
+        if (!user.getIsDeleted()) {
+            log.warn("Користувач не видалений: {}", user.getUsername());
+            // Можна просто повернутися, якщо він вже активний, щоб не кидати помилку
+            return;
+        }
+
+        user.setIsDeleted(false);
+        user.setDeletedDate(null);
+        user.setIsActive(true);
+
+        userRepository.save(user);
+        log.info("Користувач відновлений: {} (ID: {})", user.getUsername(), userId);
+
+        publishAudit(performer, "INFO", "Користувача успішно відновлено: " + user.getUsername(), userId);
+    }
     @Transactional
     public UserResponseDto toggleUserActive(Integer userId, User performer) {
         User user = getUserOrThrow(userId);
@@ -144,33 +155,45 @@ public class AdminService {
     }
 
     @Transactional
-    public UserResponseDto updateUser(Integer userId, UserUpdateRequestDto request, User performer) {
+    public UserResponseDto updateStaff(Integer userId, UserUpdateRequestDto request, User performer) {
         User user = getUserOrThrow(userId);
-
-        // --- ВИПРАВЛЕНО: Оновлюємо поля окремо ---
 
         if (request.getFirstName() != null && !request.getFirstName().isBlank()) {
             user.setFirstName(request.getFirstName());
         }
-
         if (request.getLastName() != null && !request.getLastName().isBlank()) {
             user.setLastName(request.getLastName());
         }
-
-        // По-батькові може бути пустим, тому просто null check або isBlank
         if (request.getMiddleName() != null) {
             user.setMiddleName(request.getMiddleName());
         }
-        // ------------------------------------------
-
-        if (request.getEmail() != null && !request.getEmail().isBlank()) {
-            user.setEmail(request.getEmail());
+        if (request.getUsername() != null && !request.getUsername().isBlank()) {
+            if (!user.getUsername().equals(request.getUsername()) && userRepository.findByUsername(request.getUsername()).isPresent()) {
+                throw new RegistrationException("Username '" + request.getUsername() + "' already taken");
+            }
+            user.setUsername(request.getUsername());
         }
 
-        // Також можна додати оновлення професійних полів, якщо треба:
+        if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            if (!user.getEmail().equals(request.getEmail()) && userRepository.findByEmail(request.getEmail()).isPresent()) {
+                throw new RegistrationException("Email '" + request.getEmail() + "' already taken");
+            }
+            user.setEmail(request.getEmail());
+        }
+        if (request.getPhoneNumber() != null) {
+            user.setPhoneNumber(request.getPhoneNumber());
+        }
+
         if (request.getFaculty() != null) user.setFaculty(request.getFaculty());
         if (request.getDepartment() != null) user.setDepartment(request.getDepartment());
         if (request.getPosition() != null) user.setPosition(request.getPosition());
+
+        if (request.getDateOfBirth() != null) {
+            user.setDateOfBirth(request.getDateOfBirth().atStartOfDay());
+        }
+        if (request.getEnrolledDate() != null) {
+            user.setEnrolledDate(request.getEnrolledDate());
+        }
 
         User savedUser = userRepository.save(user);
 

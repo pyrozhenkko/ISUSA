@@ -5,6 +5,7 @@ import org.ccpc.isusa.entity.main.Student;
 import org.ccpc.isusa.entity.main.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -29,8 +30,10 @@ public interface UserRepository extends JpaRepository<User, Integer> {
 
     List<User> findByRole(Role role);
     List<User> findByFaculty(String faculty);
-
-    // === SOFT-DELETE МЕТОДИ ===
+ 
+    // === SOFT-DELETE МЕТОДИ ===\\
+    @Query(value = "SELECT * FROM users WHERE userid = :id", nativeQuery = true)
+    Optional<User> findUserEvenIfDeleted(@Param("id") Integer id);
 
     /**
      * Знаходить активних користувачів за username (не видалених)
