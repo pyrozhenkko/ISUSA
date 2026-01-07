@@ -17,6 +17,8 @@ import About from './About.tsx';
 import Documentation from './Documentation.tsx';
 import PrivacyPolicy from './PrivacyPolicy.tsx';
 import SystemStatus from './SystemStatus.tsx';
+import ResetPassword from './ResetPassword.tsx';
+import ForgotPassword from './ForgotPassword.tsx';
 
 
 type UserRole = 'STUDENT' | 'LECTURER' | 'ADMIN'; 
@@ -116,6 +118,7 @@ const App = () => {
                                 handleLogout={handleLogout} 
                                 userRole={authState.userRole}
                                 userId={authState.userData?.userId}
+                                userData={authState.userData}
                             />} 
                             isAuthenticated={authState.isAuthenticated} 
                         />
@@ -130,6 +133,8 @@ const App = () => {
                 <Route path="/about" element={<About />} />
                 <Route path="/privacy" element={<PrivacyPolicy />} />
                 <Route path="/security" element={<SystemStatus />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
             
 
                 <Route path="*" element={
