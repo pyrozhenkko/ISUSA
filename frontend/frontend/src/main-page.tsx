@@ -8,11 +8,11 @@ import {
 } from 'lucide-react';
 import Footer from './Footer';
 
-type UserRole = 'STUDENT' | 'LECTURER' | 'ADMIN';
+type UserRole = 'STUDENT' | 'DEANERY_STAFF' | 'ADMIN';
 const API_BASE_URL = 'http://localhost:8081/api/applications'; 
 const API_PROFILE_URL = 'http://localhost:8081/api/attachments'
 
-const APPLICATION_TYPE_MAP: { [key: string]: number } = {
+const APPLICATION_TYPE_MAP: { [key: string]: number  } = {
     'Довідка про навчання': 1,
     'Академічна відпустка': 2,
     'Переведення на бюджет': 3,
@@ -54,7 +54,7 @@ const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
     useEffect(() => {
         const fetchAll = async () => {
-            if (userRole !== 'LECTURER' && userRole !== 'ADMIN') return;
+            if (userRole !== 'DEANERY_STAFF' && userRole !== 'ADMIN') return;
             const token = localStorage.getItem('authToken');
             try {
                 setLoading(true);
@@ -485,7 +485,7 @@ const [notificationList, setNotificationList] = useState([
             method = 'PUT';
         }
     } else if (isConfirmedToSign) {
-        url = `${API_BASE_URL}/sign-and-submit`;
+        url = `${API_BASE_URL}/full-submit`;
         body = { 
             typeId, 
             title: selectedType, 
@@ -546,7 +546,7 @@ const getStatusStyle = (status: string) => {
     return 'text-amber-500 bg-amber-500/10 border-amber-500/20'; 
 };
 
-  if (userRole === 'LECTURER' || userRole === 'ADMIN') {
+  if (userRole === 'DEANERY_STAFF' || userRole === 'ADMIN') {
     return (
       <div className="min-h-screen bg-slate-900 text-white">
         <header className="border-b border-slate-800 p-4 flex justify-between items-center">
@@ -876,7 +876,7 @@ const getStatusStyle = (status: string) => {
                             </div>
                             
                             {/* КНОПКА ПЕРЕВІРКИ - ДОСТУПНА ТІЛЬКИ ДЛЯ ДЕКАНАТУ/АДМІНА */}
-                            {((userRole as string) === 'LECTURER' || (userRole as string) === 'ADMIN') && !verificationResult && (
+                            {((userRole as string) === 'DEANERY_STAFF' || (userRole as string) === 'ADMIN') && !verificationResult && (
                                 <button 
                                     onClick={() => handleVerifySignature(viewingApplication.applicationId)}
                                     disabled={isVerifying}
@@ -925,7 +925,7 @@ const getStatusStyle = (status: string) => {
                               <div key={c.id} className={`p-3 rounded-2xl border ${c.authorRole === 'STUDENT' ? 'bg-slate-900/30 border-slate-800 ml-4' : 'bg-blue-600/5 border-blue-500/20 mr-4'}`}>
                                   <div className="flex justify-between items-center mb-1">
                                       <span className={`text-[10px] font-bold uppercase ${c.authorRole === 'STUDENT' ? 'text-slate-500' : 'text-blue-400'}`}>
-                                          {c.authorName} {c.authorRole === 'LECTURER' && '(Деканат)'}
+                                          {c.authorName} {c.authorRole === 'DEANERY_STAFF' && '(Деканат)'}
                                       </span>
                                       <span className="text-[9px] text-slate-600">{new Date(c.createdDate).toLocaleString('uk-UA')}</span>
                                   </div>
@@ -938,7 +938,7 @@ const getStatusStyle = (status: string) => {
                   </div>
 
                   {/* Поле для нового коментаря (Тільки для Деканату/Адміна) */}
-                  {((userRole as string) === 'LECTURER' || (userRole as string) === 'ADMIN') && (
+                  {((userRole as string) === 'DEANERY_STAFF' || (userRole as string) === 'ADMIN') && (
                       <div className="mt-4 flex gap-2">
                           <input 
                               type="text"
