@@ -1,5 +1,7 @@
 package org.ccpc.isusa.service;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +18,7 @@ import org.ccpc.isusa.mapper.ApplicationTypeMapper;
 import org.ccpc.isusa.repository.main.*;
 import org.ccpc.isusa.service.EmailService;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
@@ -32,6 +35,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@EntityListeners(AuditingEntityListener.class)
 public class ApplicationService {
 
     private final ApplicationRepository applicationRepository;
