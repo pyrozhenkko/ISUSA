@@ -19,6 +19,7 @@ import PrivacyPolicy from './PrivacyPolicy.tsx';
 import SystemStatus from './SystemStatus.tsx';
 import ResetPassword from './ResetPassword.tsx';
 import ForgotPassword from './ForgotPassword.tsx';
+import { AdminPanel } from './AdminPanel.tsx';
 
 
 type UserRole = 'STUDENT' | 'LECTURER' | 'ADMIN'; 
@@ -44,7 +45,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ element, isAuthenticate
 
 
 const App = () => {
-    const IS_TESTING_MODE = true; 
+    const IS_TESTING_MODE = false; 
 
     const initialToken = localStorage.getItem('authToken');
     const initialRole = localStorage.getItem('userRole') as UserRole | null;
@@ -98,7 +99,8 @@ const App = () => {
                 
                 <Route 
                     path="/" 
-                    element={<InfoPage isAuthenticated={authState.isAuthenticated} />} 
+                    element={<InfoPage isAuthenticated={authState.isAuthenticated}
+                    handleLogout={handleLogout} />} 
                 />
                 
                 <Route 
@@ -135,7 +137,8 @@ const App = () => {
                 <Route path="/security" element={<SystemStatus />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
-            
+                
+                <Route path="/admin/*" element={<AdminPanel />} />
 
                 <Route path="*" element={
                     <div className="text-center p-10">
