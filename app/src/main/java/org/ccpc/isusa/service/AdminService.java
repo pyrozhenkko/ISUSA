@@ -8,16 +8,19 @@ import org.ccpc.isusa.dto.request.UserCreateRequestDto;
 import org.ccpc.isusa.dto.request.UserUpdateRequestDto;
 import org.ccpc.isusa.dto.response.*;
 import org.ccpc.isusa.entity.main.*;
+import org.ccpc.isusa.entity.reports.DailyReport;
 import org.ccpc.isusa.event.AuditEvent;
 import org.ccpc.isusa.exception.RegistrationException;
 import org.ccpc.isusa.mapper.*;
 import org.ccpc.isusa.repository.main.*;
+import org.ccpc.isusa.repository.reports.DailyReportRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -32,6 +35,7 @@ public class AdminService {
     private final StudentRepository studentRepository;
     private final ApplicationRepository applicationRepository;
     private final ApplicationHistoryRepository historyRepository;
+    private final DailyReportRepository dailyReportRepository;
 
     private final UserMapper userMapper;
     private final StudentMapper studentMapper;
@@ -328,6 +332,29 @@ public class AdminService {
 
         return user;
     }
+
+
+    /**
+     * Отримати дані для графіка "Здоров'я системи" за останні N днів.
+     */
+    @Transactional(readOnly = true) // Читання з бази звітів
+    public List<ChartDataDto> getSystemHealthChart(int days) {
+        LocalDate endDate = LocalDate.now();
+        LocalDate startDate = endDate.minusDays(days);
+
+        List<DailyReport> reports = dailyReportRepository.findByReportDateBetweenOrderByReportDateAsc(startDate, endDate);
+
+        return reports.stream()
+                .map(report -> ChartDataDto.builder()
+                        .date(report.getReportDate())
+                        .infoCount(report.getInfoCount())
+                        .warnCount(report.getWarnCount())
+                        .errorCount(report.getErrorCount())
+                        .totalLogs(report.getTotalLogs())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
     private void validateUserNotExists(String username, String email) {
         if (userRepository.findByUsername(username).isPresent()) throw new RegistrationException("Username taken");
         if (userRepository.findByEmail(email).isPresent()) throw new RegistrationException("Email taken");

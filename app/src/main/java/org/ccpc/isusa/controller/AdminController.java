@@ -6,6 +6,7 @@ import org.ccpc.isusa.dto.request.StudentRegistrationRequestDto;
 import org.ccpc.isusa.dto.request.UserCreateRequestDto;
 import org.ccpc.isusa.dto.request.UserUpdateRequestDto;
 import org.ccpc.isusa.dto.response.ApplicationResponseDto;
+import org.ccpc.isusa.dto.response.ChartDataDto;
 import org.ccpc.isusa.dto.response.UserActivityReportDto;
 import org.ccpc.isusa.dto.response.UserResponseDto;
 import org.ccpc.isusa.entity.main.User; // Твоя сутність
@@ -134,5 +135,15 @@ public class AdminController {
     @GetMapping("/applications")
     public ResponseEntity<List<ApplicationResponseDto>> getAllApplications() {
         return ResponseEntity.ok(adminService.getAllApplications());
+    }
+
+
+    // GET /api/admin/reports/chart?days=7
+    // GET /api/admin/reports/chart?days=30
+    @GetMapping("/reports/chart")
+    public ResponseEntity<List<ChartDataDto>> getSystemChart(
+            @RequestParam(defaultValue = "7") int days
+    ) {
+        return ResponseEntity.ok(adminService.getSystemHealthChart(days));
     }
 }
