@@ -4,10 +4,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.ccpc.isusa.dto.response.ApplicationVerificationResponseDto;
 import org.ccpc.isusa.entity.main.Application;
-import org.ccpc.isusa.entity.main.User; // Додано для аудиту
-import org.ccpc.isusa.event.AuditEvent; // Твоя подія
+import org.ccpc.isusa.entity.main.User;
+import org.ccpc.isusa.event.AuditEvent;
 import org.ccpc.isusa.repository.main.ApplicationRepository;
-import org.springframework.context.ApplicationEventPublisher; // Паблішер
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,17 +23,24 @@ public class VerificationService {
 
     private final ApplicationRepository applicationRepository;
     private final SignatureService signatureService;
-    private final ApplicationEventPublisher eventPublisher; // 1. Ін'єкція паблішера
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
     public ApplicationVerificationResponseDto verifyApplicationIntegrity(Integer applicationId, User performer) {
 
+        // 1. Пошук заявки (з логуванням помилки, якщо не знайдено)
         Application app = applicationRepository.findById(applicationId)
-                .orElseThrow(() -> new EntityNotFoundException("Заявку з ID " + applicationId + " не знайдено."));
+                .orElse(null);
 
-        // 1. Перевірка наявності підпису
+        if (app == null) {
+            // Безпека: хтось намагається перевірити неіснуючу заявку
+            publishAudit(performer, "WARN", "Спроба верифікації неіснуючої заявки", "Application", applicationId);
+            throw new EntityNotFoundException("Заявку з ID " + applicationId + " не знайдено.");
+        }
+
+        // 2. Перевірка наявності підпису
         if (app.getSignature() == null || app.getDataToSign() == null || app.getContentHash() == null) {
-            publishAudit(performer, "WARN", "Спроба перевірки непідписаної заявки", applicationId);
+            publishAudit(performer, "WARN", "Спроба перевірки непідписаної заявки", "Application", applicationId);
             return ApplicationVerificationResponseDto.builder()
                     .isSignatureValid(false)
                     .isContentIntact(false)
@@ -41,13 +48,12 @@ public class VerificationService {
                     .build();
         }
 
-        // --- 2. ПЕРЕВІРКА ЦІЛІСНОСТІ КОНТЕНТУ ---
+        // --- 3. ПЕРЕВІРКА ЦІЛІСНОСТІ КОНТЕНТУ ---
         String currentContentHash = signatureService.hashData(app.getContent());
         boolean isContentIntact = currentContentHash.equals(app.getContentHash());
 
         if (!isContentIntact) {
-            // ЛОГ: Спроба підміни контенту
-            publishAudit(performer, "ERROR", "КРИТИЧНО: Контент заявки змінено після підписання!", applicationId);
+            publishAudit(performer, "ERROR", "КРИТИЧНО: Контент заявки змінено після підписання!", "Application", applicationId);
             return ApplicationVerificationResponseDto.builder()
                     .isSignatureValid(false)
                     .isContentIntact(false)
@@ -55,12 +61,11 @@ public class VerificationService {
                     .build();
         }
 
-        // --- 3. ПЕРЕВІРКА КРИПТОГРАФІЧНОГО ПІДПИСУ ---
+        // --- 4. ПЕРЕВІРКА КРИПТОГРАФІЧНОГО ПІДПИСУ ---
         boolean isSignatureValid = signatureService.verify(app.getDataToSign(), app.getSignature());
 
         if (!isSignatureValid) {
-            // ЛОГ: Спроба фальсифікації підпису
-            publishAudit(performer, "SECURITY", "КРИТИЧНО: Невалідний цифровий підпис! Дані підпису скомпрометовані.", applicationId);
+            publishAudit(performer, "SECURITY", "КРИТИЧНО: Невалідний цифровий підпис! Дані скомпрометовані.", "Application", applicationId);
             return ApplicationVerificationResponseDto.builder()
                     .isSignatureValid(false)
                     .isContentIntact(true)
@@ -68,14 +73,14 @@ public class VerificationService {
                     .build();
         }
 
-        // --- 4. УСПІХ ---
+        // --- 5. УСПІХ ---
+        // Парсинг метаданих
         String[] parts = app.getDataToSign().split("&");
         Integer studentId = Integer.parseInt(parts[0].split("=")[1]);
         long timestamp = Long.parseLong(parts[3].split("=")[1]);
         LocalDateTime signedAt = LocalDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneOffset.UTC);
 
-        // ЛОГ: Успішна перевірка
-        publishAudit(performer, "INFO", "Успішна перевірка цілісності заявки", applicationId);
+        publishAudit(performer, "INFO", "Успішна перевірка цілісності заявки", "Application", applicationId);
 
         return ApplicationVerificationResponseDto.builder()
                 .isSignatureValid(true)
@@ -86,15 +91,18 @@ public class VerificationService {
                 .build();
     }
 
-    // Допоміжний метод для надсилання події
-    private void publishAudit(User user, String level, String message, Integer appId) {
+    /**
+     * Універсальний метод для публікації аудиту.
+     * Якщо performer == null, це вважається системною дією.
+     */
+    private void publishAudit(User user, String level, String message, String entityType, Integer entityId) {
         eventPublisher.publishEvent(new AuditEvent(
                 this,
                 user,
                 level,
                 message,
-                "Application",
-                appId
+                entityType,
+                entityId
         ));
     }
 }

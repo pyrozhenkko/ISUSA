@@ -8,6 +8,7 @@ import org.ccpc.isusa.entity.main.PasswordResetToken;
 import org.ccpc.isusa.entity.main.Role;
 import org.ccpc.isusa.entity.main.Student;
 import org.ccpc.isusa.entity.main.User;
+import org.ccpc.isusa.event.AuditEvent; // Додано для подій
 import org.ccpc.isusa.exception.RegistrationException;
 import org.ccpc.isusa.mapper.StudentMapper;
 import org.ccpc.isusa.mapper.UserMapper;
@@ -16,6 +17,7 @@ import org.ccpc.isusa.repository.main.RoleRepository;
 import org.ccpc.isusa.repository.main.StudentRepository;
 import org.ccpc.isusa.repository.main.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher; // Додано паблішер
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j; // Додано для логів в консоль
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -33,6 +36,7 @@ import java.util.UUID;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j // Додаємо логування Slf4j
 public class AuthService {
 
     // Репозиторії для доступу до бази
@@ -57,6 +61,9 @@ public class AuthService {
 
     // Сервіс для скидання пароля
     private final EmailService emailService;
+
+    // Публікація подій аудиту
+    private final ApplicationEventPublisher eventPublisher;
 
     // Роль за замовчуванням (з application.properties)
     @Value("${isusa.default-student-role-name}")
@@ -102,6 +109,9 @@ public class AuthService {
         // 6. Зберігаємо Student
         studentRepository.save(student);
 
+        // АУДИТ: Успішна реєстрація
+        publishAudit(savedUser, "INFO", "Зареєстровано нового студента", savedUser.getUserId());
+
         // 7. Генеруємо токен
         String jwtToken = jwtService.generateToken(savedUser);
 
@@ -122,11 +132,14 @@ public class AuthService {
 
         // 2. Перевіряємо, чи акаунт заблокований
         if (authSecurityService.isAccountLocked(user)) {
+            // АУДИТ: Блокування
+            publishAudit(user, "SECURITY", "Відмова у вході: акаунт тимчасово заблоковано", null);
             throw new SecurityException("Акаунт заблокований на 15 хвилин через багато невдалих спроб входу");
         }
 
         // 3. Перевіряємо, чи активний користувач
         if (!user.getIsActive()) {
+            publishAudit(user, "WARN", "Спроба входу в деактивований акаунт", null);
             throw new SecurityException("Акаунт деактивований. Зверніться до адміністратора");
         }
 
@@ -142,6 +155,8 @@ public class AuthService {
         } catch (Exception e) {
             // Реєструємо невдалу спробу входу
             authSecurityService.recordFailedLogin(user);
+            // АУДИТ: Невдалий вхід
+            publishAudit(user, "WARN", "Невдала спроба входу (невірний пароль)", null);
             throw new SecurityException("Невірне ім'я користувача або пароль");
         }
 
@@ -150,6 +165,7 @@ public class AuthService {
 
         // 6. Перевіряємо, чи пароль не дійсний (не змінювався більше 90 днів)
         if (authSecurityService.isPasswordExpired(user)) {
+            publishAudit(user, "WARN", "Вхід з простроченим паролем (вимагається зміна)", null);
             // Генеруємо токен з обмеженими правами для зміни пароля
             var jwtToken = jwtService.generateToken(user);
             // У відповіді повідомляємо, що потрібна зміна пароля
@@ -180,6 +196,9 @@ public class AuthService {
 
         // 4. Відправляємо лист
         emailService.sendPasswordResetEmail(user.getEmail(), token);
+
+        // АУДИТ: Запит відновлення
+        publishAudit(user, "INFO", "Ініційовано процедуру відновлення пароля", null);
     }
 
     @Transactional
@@ -202,10 +221,13 @@ public class AuthService {
 
         // 4. Видаляємо використаний токен
         tokenRepository.delete(resetToken);
+
+        // АУДИТ: Зміна пароля
+        publishAudit(user, "SECURITY", "Пароль успішно змінено через відновлення", null);
     }
 
     @Transactional
-    public void createStaff(StaffCreateRequestDto request) {
+    public void createStaff(StaffCreateRequestDto request, User creator) { // ДОДАНО: User creator
 
         if (userRepository.findByUsername(request.getUsername()).isPresent()) {
             throw new RuntimeException("Username already exists");
@@ -222,7 +244,7 @@ public class AuthService {
         if (request.getRole().equals("DEANERY_STAFF")) {
             role = roleRepository.findByRoleName("DEANERY_STAFF")
                     .orElseThrow(() -> new RuntimeException("DEANERY_STAFF role not found"));
-            
+
         }
 
         User user = new User();
@@ -251,8 +273,26 @@ public class AuthService {
         user.setFailedLoginAttempts(0);
         user.setPasswordChangedDate(LocalDateTime.now());
 
-        userRepository.save(user);
+        User savedUser = userRepository.save(user);
+
+        // АУДИТ: Створення персоналу
+        publishAudit(creator, "INFO",
+                "Створено нового співробітника: " + savedUser.getUsername() + " (" + request.getRole() + ")",
+                savedUser.getUserId());
     }
 
-
+    /**
+     * Допоміжний метод для надсилання подій аудиту.
+     * EntityType = "Auth"
+     */
+    private void publishAudit(User user, String level, String message, Integer entityId) {
+        eventPublisher.publishEvent(new AuditEvent(
+                this,
+                user,
+                level,
+                message,
+                "Auth",
+                entityId
+        ));
+    }
 }

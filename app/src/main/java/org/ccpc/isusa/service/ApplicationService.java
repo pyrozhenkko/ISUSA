@@ -84,7 +84,7 @@ public class ApplicationService {
 
         return savedAppDto;
     }
-    
+
 
 
     /**
@@ -130,9 +130,12 @@ public class ApplicationService {
         app.setApplicationType(type);
         app.setApplicationStatus(draftStatus);
 
-        publishAudit(currentUser, "INFO", "Створено чернетку заявки: " + app.getTitle(), app.getApplicationId());
+        // Потрібно зберегти перед аудитом, щоб отримати ID
+        Application savedApp = applicationRepository.save(app);
 
-        return applicationMapper.toResponseDto(applicationRepository.save(app));
+        publishAudit(currentUser, "INFO", "Створено чернетку заявки: " + savedApp.getTitle(), savedApp.getApplicationId());
+
+        return applicationMapper.toResponseDto(savedApp);
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -243,11 +246,7 @@ public class ApplicationService {
             throw new IllegalStateException("Ця заява вже підписана.");
         }
 
-        ApplicationStatus newStatus = getStatusOrThrow("Нова");
-        app.setApplicationStatus(newStatus);
-
         app.setApplicationStatus(getStatusOrThrow("Нова"));
-
         signApplicationData(app, student, currentUser);
 
         publishAudit(currentUser, "INFO", "Чернетку підписано та подано", appId);
@@ -326,6 +325,8 @@ public class ApplicationService {
         try {
             authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, rawPassword));
         } catch (AuthenticationException e) {
+            // ДОДАНО: Логування спроби підбору паролю
+            publishAudit(null, "WARN", "Невдала спроба підпису (невірний пароль) для користувача: " + username, null);
             throw new SecurityException("Невірний пароль.");
         }
     }
@@ -405,7 +406,8 @@ public class ApplicationService {
                     student.getFullName(),
                     app.getTitle(),
                     status.getStatusName(),
-                    dto.getComment() // Коментар від персоналу
+                    dto.getComment(), // Коментар від персоналу
+                    app.getApplicationId() // ВИПРАВЛЕНО: Додано ID заявки
             );
 
             log.info("Status change notification sent to {} for application {}",

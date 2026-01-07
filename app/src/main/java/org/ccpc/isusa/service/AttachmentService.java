@@ -42,11 +42,8 @@ public class AttachmentService {
     private final StudentRepository studentRepository;
     private final AttachmentMapper attachmentMapper;
     private final UserRepository userRepository;
-
     private final ApplicationEventPublisher eventPublisher;
 
-
-    // Папка для збереження файлів (можна налаштувати в application.properties)
     @Value("${isusa.upload.dir:uploads}")
     private String uploadDir;
 
@@ -94,9 +91,10 @@ public class AttachmentService {
 
         String extension = originalFileName.substring(originalFileName.lastIndexOf('.') + 1).toLowerCase();
 
+        // Аудит безпеки: спроба завантажити потенційно шкідливий файл (наприклад, .exe або .php)
         if (!allowedExtensions.contains(extension) || !allowedMimeTypes.contains(contentType)) {
-            publishAudit(currentUser, "WARN",
-                    "Спроба завантаження забороненого файлу: " + originalFileName,
+            publishAudit(currentUser, "SECURITY",
+                    "БЛОКУВАННЯ: Спроба завантаження забороненого типу файлу: " + originalFileName,
                     "Attachment", null);
             throw new IllegalArgumentException("Недозволений тип файлу");
         }
@@ -109,6 +107,7 @@ public class AttachmentService {
         Application app = applicationRepository
                 .findByApplicationIdAndStudent(applicationId, student)
                 .orElseThrow(() -> {
+                    // Аудит безпеки: доступ до чужої заявки
                     publishAudit(currentUser, "WARN",
                             "Спроба доступу до чужої заявки ID: " + applicationId,
                             "Application", applicationId);
@@ -119,7 +118,7 @@ public class AttachmentService {
         String status = app.getApplicationStatus().getStatusName();
         if (!"Чернетка".equals(status) && !"Нова".equals(status)) {
             publishAudit(currentUser, "WARN",
-                    "Відмовлено у завантаженні файлу. Статус: " + status,
+                    "Спроба додати файл до вже поданої заявки. Статус: " + status,
                     "Application", applicationId);
             throw new IllegalStateException("Не можна додавати файли до заявки в статусі: " + status);
         }
@@ -136,7 +135,6 @@ public class AttachmentService {
         Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
         // 5. Збереження в БД
-        // 5. Збереження в БД
         Attachment attachment = new Attachment();
         attachment.setApplication(app);
         attachment.setFileName(originalFileName);
@@ -145,26 +143,28 @@ public class AttachmentService {
 
         Attachment savedAttachment = attachmentRepository.save(attachment);
 
-        // ВАЖЛИВО: Оновлюємо зв'язок у пам'яті
         if (app.getAttachments() == null) {
             app.setAttachments(new java.util.HashSet<>());
         }
         app.getAttachments().add(savedAttachment);
 
-        // 6. Audit log
+        // 6. Audit log: Успіх
         publishAudit(currentUser, "INFO",
                 "Завантажено файл: " + originalFileName,
                 "Attachment", savedAttachment.getAttachmentId());
 
         return attachmentMapper.toResponseDto(savedAttachment);
     }
+
     public Resource loadFileAsResource(Integer attachmentId, User currentUser) throws MalformedURLException {
+        // Додано аудит на випадок запиту неіснуючого файлу
         Attachment attachment = attachmentRepository.findById(attachmentId)
-                .orElseThrow(() -> new EntityNotFoundException("Вкладення не знайдено"));
+                .orElseThrow(() -> {
+                    publishAudit(currentUser, "WARN", "Спроба доступу до неіснуючого вкладення", "Attachment", attachmentId);
+                    return new EntityNotFoundException("Вкладення не знайдено");
+                });
 
-        // Тут можна додати додаткову перевірку прав доступу, якщо потрібно
-
-        // 3. ЛОГ: Фіксуємо факт скачування (хто і що скачав)
+        // 3. ЛОГ: Фіксуємо факт скачування документів
         publishAudit(currentUser, "INFO", "Скачано файл: " + attachment.getFileName(), "Attachment", attachmentId);
 
         Path filePath = Paths.get(attachment.getFilePath());
@@ -173,18 +173,16 @@ public class AttachmentService {
         if (resource.exists() || resource.isReadable()) {
             return resource;
         } else {
-            publishAudit(currentUser, "ERROR", "Помилка читання файлу з диску: " + attachment.getFileName(), "Attachment", attachmentId);
+            // Критична помилка системи: запис в БД є, а файлу на диску немає
+            publishAudit(currentUser, "ERROR", "CRITICAL: Файл відсутній на диску: " + attachment.getFileName(), "Attachment", attachmentId);
             throw new RuntimeException("Не вдалося прочитати файл: " + attachment.getFileName());
         }
-
     }
-
 
     @Transactional
     public AttachmentResponseDto uploadUserProfileImage(MultipartFile file, User currentUser) throws IOException {
-        // 1. Зберігаємо файл на диск
         String uniqueFileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
-        Path uploadPath = Paths.get(uploadDir, "profiles"); // Можна створити окрему підпапку
+        Path uploadPath = Paths.get(uploadDir, "profiles");
 
         if (!Files.exists(uploadPath)) {
             Files.createDirectories(uploadPath);
@@ -193,35 +191,37 @@ public class AttachmentService {
         Path filePath = uploadPath.resolve(uniqueFileName);
         Files.copy(file.getInputStream(), filePath);
 
-        // 2. Створюємо запис Attachment
         Attachment attachment = new Attachment();
-        attachment.setApplication(null); // Для профілю заявка не потрібна
+        attachment.setApplication(null);
         attachment.setFileName(file.getOriginalFilename());
         attachment.setFilePath(filePath.toString());
         attachment.setUploadedDate(LocalDateTime.now());
         Attachment savedAttachment = attachmentRepository.save(attachment);
 
-        // 3. Оновлюємо посилання у користувача
         currentUser.setProfileImageId(savedAttachment);
         userRepository.save(currentUser);
 
-        // Логування
         publishAudit(currentUser, "INFO", "Оновлено фото профілю: " + file.getOriginalFilename(), "User", currentUser.getUserId());
 
         return attachmentMapper.toResponseDto(savedAttachment);
     }
 
+    /**
+     * Отримання фото профілю.
+     * Тут НЕМАЄ аудиту, щоб не створювати "шум" (Log Noise),
+     * оскільки цей метод викликається при кожному завантаженні сторінки.
+     */
     public Resource getUserProfileImage(Integer userId) throws MalformedURLException {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("Користувача не знайдено"));
 
-        Attachment attachment = user.getProfileImageId(); // Отримуємо зв'язаний Attachment
+        Attachment attachment = user.getProfileImageId();
 
         if (attachment == null) {
             throw new EntityNotFoundException("У користувача немає фото профілю");
         }
 
-        Path filePath = Paths.get(attachment.getFilePath()); // Беремо шлях з БД
+        Path filePath = Paths.get(attachment.getFilePath());
         Resource resource = new UrlResource(filePath.toUri());
 
         if (resource.exists() || resource.isReadable()) {
@@ -231,9 +231,6 @@ public class AttachmentService {
         }
     }
 
-    /**
-     * Допоміжний метод для надсилання подій аудиту
-     */
     private void publishAudit(User user, String level, String message, String entityType, Integer entityId) {
         eventPublisher.publishEvent(new AuditEvent(
                 this,

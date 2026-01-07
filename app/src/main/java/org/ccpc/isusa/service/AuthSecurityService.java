@@ -41,6 +41,7 @@ public class AuthSecurityService {
 
         if (LocalDateTime.now().isBefore(user.getAccountLockedUntil())) {
             log.warn("Акаунт заблокований: {}", user.getUsername());
+            // Лог "Відмова у вході" вже пишеться у AuthService, тому тут дублювати не треба
             return true;
         }
 
@@ -50,7 +51,7 @@ public class AuthSecurityService {
         userRepository.save(user);
         log.info("Акаунт розблокований: {}", user.getUsername());
 
-        //ЛОГ: Автоматичне розблокування акаунту
+        // ЛОГ: Автоматичне розблокування акаунту
         publishAudit(user, "INFO", "Акаунт автоматично розблокований після завершення терміну блокування", user.getUserId());
         return false;
     }
@@ -63,19 +64,20 @@ public class AuthSecurityService {
         user.setFailedLoginAttempts(user.getFailedLoginAttempts() + 1);
 
         log.warn("Невдала спроба входу для {}: {} спроб(и)",
-            user.getUsername(),
-            user.getFailedLoginAttempts());
+                user.getUsername(),
+                user.getFailedLoginAttempts());
 
-        //ЛОГ: Попередження про невдалий вхід
+        // ЛОГ: Попередження про невдалий вхід
         publishAudit(user, "WARN", "Невдала спроба входу. Спроба №" + user.getFailedLoginAttempts(), user.getUserId());
 
         // Якщо перевищено максимум спроб - блокуємо
         if (user.getFailedLoginAttempts() >= maxFailedAttempts) {
             user.setAccountLockedUntil(LocalDateTime.now().plusMinutes(lockDurationMinutes));
             log.error("Акаунт заблокований на {} хвилин: {}",
-                lockDurationMinutes,
-                user.getUsername());
-            //ЛОГ: КРИТИЧНО - Блокування акаунту (Brute-force protection)
+                    lockDurationMinutes,
+                    user.getUsername());
+
+            // ЛОГ: КРИТИЧНО - Блокування акаунту (Brute-force protection)
             publishAudit(user, "SECURITY", "АКАУНТ ЗАБЛОКОВАНО на " + lockDurationMinutes + " хв через перевищення ліміту спроб", user.getUserId());
         }
 
@@ -94,7 +96,7 @@ public class AuthSecurityService {
         log.info("Успішний вхід: {}", user.getUsername());
         userRepository.save(user);
 
-        //ЛОГ: Успішна аутентифікація
+        // ЛОГ: Успішна аутентифікація
         publishAudit(user, "INFO", "Успішний вхід у систему", user.getUserId());
     }
 
@@ -119,6 +121,7 @@ public class AuthSecurityService {
         user.setPasswordChangedDate(LocalDateTime.now());
         userRepository.save(user);
         log.info("Пароль оновлений для: {}", user.getUsername());
+
         // ЛОГ: Зміна пароля (Критична подія безпеки)
         publishAudit(user, "SECURITY", "Користувач успішно змінив пароль", user.getUserId());
     }
@@ -137,4 +140,3 @@ public class AuthSecurityService {
         ));
     }
 }
-

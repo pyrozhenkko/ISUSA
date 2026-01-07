@@ -11,16 +11,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 
-/**
- * Сервіс для управління видаленням користувачів.
- * Використовує soft-delete (логічне видалення) замість фізичного.
- *
- * Переваги:
- * - Зберігаємо дані для аудиту (історія операцій)
- * - Не порушуємо референційну цілісність (заявки, логи, тощо)
- * - Можемо відновити користувача
- * - Відповідність GDPR (мінімум 3 роки зберігання)
- */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -31,28 +21,30 @@ public class UserDeletionService {
 
     /**
      * Soft-delete: логічне видалення користувача
-     * Замість DELETE, ми UPDATE запис, встановлюючи is_deleted = true
      */
     @Transactional
     public void softDeleteUser(Integer userId, User performer) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("Користувача не знайдено"));
+        User user = userRepository.findById(userId).orElse(null);
 
-        if (user.getIsDeleted()) {
-            log.warn("Користувач вже видален: {}", user.getUsername());
-            // ЛОГ: Спроба повторного видалення (може бути помилкою інтерфейсу)
+        if (user == null) {
+            publishAudit(performer, "WARN", "Спроба видалення неіснуючого користувача", userId);
+            throw new EntityNotFoundException("Користувача з ID " + userId + " не знайдено");
+        }
+
+        if (Boolean.TRUE.equals(user.getIsDeleted())) { // Null-safe check
+            log.warn("Користувач вже видалений: {}", user.getUsername());
             publishAudit(performer, "WARN", "Спроба видалити вже видаленого користувача: " + user.getUsername(), userId);
-            throw new IllegalStateException("Користувач вже видален");
+            throw new IllegalStateException("Користувач вже видалений");
         }
 
         // Помічаємо як видаленого
         user.setIsDeleted(true);
         user.setDeletedDate(LocalDateTime.now());
-        user.setIsActive(false); // Також деактивуємо
+        user.setIsActive(false);
 
         userRepository.save(user);
         log.info("Користувач soft-deleted: {} (ID: {})", user.getUsername(), userId);
-        // 2. ЛОГ: Успішне логічне видалення
+
         publishAudit(performer, "INFO", "Користувача переведено у статус 'Видалений' (soft-delete): " + user.getUsername(), userId);
     }
 
@@ -61,12 +53,18 @@ public class UserDeletionService {
      */
     @Transactional
     public void restoreDeletedUser(Integer userId, User performer) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("Користувача не знайдено"));
+        User user = userRepository.findById(userId).orElse(null);
 
-        if (!user.getIsDeleted()) {
-            log.warn("Користувач не видален: {}", user.getUsername());
-            throw new IllegalStateException("Користувач не видален");
+        if (user == null) {
+            publishAudit(performer, "WARN", "Спроба відновлення неіснуючого користувача", userId);
+            throw new EntityNotFoundException("Користувача з ID " + userId + " не знайдено");
+        }
+
+        if (!Boolean.TRUE.equals(user.getIsDeleted())) {
+            log.warn("Спроба відновити активного користувача: {}", user.getUsername());
+            // Додано лог в аудит
+            publishAudit(performer, "WARN", "Спроба відновлення користувача, який не був видалений: " + user.getUsername(), userId);
+            throw new IllegalStateException("Користувач не видалений");
         }
 
         user.setIsDeleted(false);
@@ -76,39 +74,27 @@ public class UserDeletionService {
         userRepository.save(user);
         log.info("Користувач відновлений: {} (ID: {})", user.getUsername(), userId);
 
-        // 3. ЛОГ: Успішне відновлення
         publishAudit(performer, "INFO", "Користувача успішно відновлено: " + user.getUsername(), userId);
     }
 
-    /**
-     * Перевіряє, чи користувач видален
-     */
     public boolean isUserDeleted(User user) {
-        return user.getIsDeleted() != null && user.getIsDeleted();
+        return Boolean.TRUE.equals(user.getIsDeleted());
     }
 
-    /**
-     * Отримати видаленого користувача за ID
-     * (Для адміністративних цілей)
-     */
     public User getDeletedUserById(Integer userId) {
         return userRepository.findById(userId)
                 .filter(this::isUserDeleted)
                 .orElseThrow(() -> new EntityNotFoundException("Видаленого користувача не знайдено"));
     }
 
-    /**
-     * Допоміжний метод для надсилання подій аудиту
-     */
     private void publishAudit(User performer, String level, String message, Integer targetUserId) {
         eventPublisher.publishEvent(new AuditEvent(
                 this,
                 performer,
                 level,
                 message,
-                "User",
-                targetUserId
+                "User", // EntityType
+                targetUserId // EntityId
         ));
     }
 }
-

@@ -1,24 +1,23 @@
 package org.ccpc.isusa.controller;
 
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.ccpc.isusa.dto.request.LoginRequestDto;
 import org.ccpc.isusa.dto.request.StaffCreateRequestDto;
 import org.ccpc.isusa.dto.request.StudentRegistrationRequestDto;
 import org.ccpc.isusa.dto.response.LoginResponseDto;
+import org.ccpc.isusa.entity.main.User; // Додано імпорт
 import org.ccpc.isusa.service.AuthService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal; // Додано імпорт
 import org.springframework.web.bind.annotation.*;
-
-import lombok.RequiredArgsConstructor;
 
 /**
  * "Вхідні ворота" (Публічний API).
- * Обробляє запити, які не потребують токена (вхід та реєстрація).
- * Доступ дозволено у SecurityConfig.java.
  */
 @RestController
-@RequestMapping("/api/auth") // Публічний URL
+@RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
@@ -35,7 +34,7 @@ public class AuthController {
     }
 
     /**
-     * Ендпоінт для входу в систему (для всіх ролей: STUDENT, ADMIN, etc.).
+     * Ендпоінт для входу в систему.
      */
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDto> login(
@@ -43,7 +42,6 @@ public class AuthController {
     ) {
         return ResponseEntity.ok(authService.login(request));
     }
-
 
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@RequestParam String email) {
@@ -56,13 +54,20 @@ public class AuthController {
         authService.resetPassword(token, newPassword);
         return ResponseEntity.ok("Пароль успішно змінено");
     }
+
+    /**
+     * Створення персоналу (Адмін, Деканат).
+     * ЗМІНИ: Додано @AuthenticationPrincipal User admin.
+     * Це дозволяє передати в сервіс інформацію про те, ХТО саме натиснув кнопку "Створити".
+     */
     @PostMapping("/staff/create")
     @PreAuthorize("hasAuthority('user:manage')")
     public ResponseEntity<?> createAdmin(
-            @Valid @RequestBody StaffCreateRequestDto request
+            @Valid @RequestBody StaffCreateRequestDto request,
+            @AuthenticationPrincipal User admin // Spring Security автоматично підставить сюди поточного адміна
     ) {
-        authService.createStaff(request);
+        // Передаємо адміна в сервіс для аудиту
+        authService.createStaff(request, admin);
         return ResponseEntity.ok(request.getRole() + " створено");
     }
-
 }
