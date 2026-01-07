@@ -1,6 +1,7 @@
 package org.ccpc.isusa.entity.main;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -26,5 +27,6 @@ public class Permission {
      * Назва права доступу (Наприклад, 'application:read').
      */
     @Column(name = "PermissionName", length = 50, nullable = false, unique = true)
+    @Size(max = 50)
     private String permissionName;
 }

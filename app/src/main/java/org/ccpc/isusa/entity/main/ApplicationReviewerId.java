@@ -2,6 +2,7 @@ package org.ccpc.isusa.entity.main;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
+import jakarta.validation.constraints.NotNull;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -12,12 +13,14 @@ import java.io.Serializable;
 @Getter
 @Setter
 @NoArgsConstructor
-@EqualsAndHashCode // Важливо для композитних ключів
+@EqualsAndHashCode
 public class ApplicationReviewerId implements Serializable {
 
     @Column(name = "ApplicationID")
+    @NotNull
     private Integer applicationId;
 
     @Column(name = "ReviewerUserID")
+    @NotNull
     private Integer reviewerUserId;
 }

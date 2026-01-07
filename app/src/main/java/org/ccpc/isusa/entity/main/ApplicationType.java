@@ -1,6 +1,7 @@
 package org.ccpc.isusa.entity.main;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -19,9 +20,12 @@ public class ApplicationType {
     private Integer typeId;
 
     @Column(name = "TypeName", length = 200, nullable = false, unique = true)
+    @NotBlank
+    @Size(max = 200)
     private String typeName;
 
     @Column(name = "Description", length = 500)
+    @Size(max = 500)
     private String description;
 
     @OneToMany(mappedBy = "applicationType", fetch = FetchType.LAZY)

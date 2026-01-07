@@ -1,6 +1,7 @@
 package org.ccpc.isusa.entity.main;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -21,27 +22,24 @@ public class Role implements GrantedAuthority {
     private Integer roleId;
 
     @Column(name = "RoleName", length = 50, nullable = false, unique = true)
+    @NotBlank
+    @Size(max = 50)
     private String roleName;
 
-    // === НОВИЙ ЗВ'ЯЗОК ДЛЯ ПРАВ ДОСТУПУ (RBAC) ===
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
-            name = "RolePermissions", // Проміжна таблиця
+            name = "RolePermissions",
             joinColumns = @JoinColumn(name = "RoleID"),
             inverseJoinColumns = @JoinColumn(name = "PermissionID")
     )
+    @NotEmpty
     private Set<Permission> permissions;
 
-    // --- Зв'язки з іншими таблицями (без змін) ---
     @OneToMany(mappedBy = "role", fetch = FetchType.LAZY)
     private Set<User> users;
 
-    // === РЕАЛІЗАЦІЯ GrantedAuthority ===
     @Override
     public String getAuthority() {
-        // У моделі RBAC, 'Authority' - це самостійне право, а не назва ролі.
-        // Ми повертаємо лише назву ролі, щоб спростити логіку.
-        // Основні права (Permissions) повертаються через User.getAuthorities().
         return this.roleName;
     }
 }

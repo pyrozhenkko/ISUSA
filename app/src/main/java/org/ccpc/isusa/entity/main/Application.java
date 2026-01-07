@@ -1,6 +1,7 @@
 package org.ccpc.isusa.entity.main;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -8,6 +9,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 import java.util.Set;
+import java.util.HashSet;
 
 @Entity
 @Table(name = "Applications")
@@ -23,21 +25,27 @@ public class Application {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "StudentID", nullable = false)
+    @NotNull
     private Student student;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "TypeID", nullable = false)
+    @NotNull
     private ApplicationType applicationType;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "StatusID", nullable = false)
+    @NotNull
     private ApplicationStatus applicationStatus;
 
     @Column(name = "Title", length = 250, nullable = false)
+    @NotBlank
+    @Size(max = 250)
     private String title;
 
-    @Lob // Тип TEXT
+    @Lob
     @Column(name = "Content", nullable = false)
+    @NotBlank
     private String content;
 
     @CreationTimestamp
@@ -52,13 +60,13 @@ public class Application {
     @JoinColumn(name = "ProcessedByUserID")
     private User processedByUser;
 
-    // === НОВІ ПОЛЯ ДЛЯ ПІДПИСУ ===
 
     /**
      * "Відбиток" заявки (SHA-256 від контенту),
      * який використовувався для генерації dataHash.
      */
     @Column(name = "ContentHash", length = 64)
+    @Size(max = 64)
     private String contentHash;
 
     /**
@@ -78,7 +86,7 @@ public class Application {
     private String signature;
 
     @OneToMany(mappedBy = "application", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Set<Attachment> attachments = new java.util.HashSet<>(); // Ініціалізуємо
+    private Set<Attachment> attachments = new HashSet<>(); // Ініціалізуємо
 
     @OneToMany(mappedBy = "application", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Comment> comments;

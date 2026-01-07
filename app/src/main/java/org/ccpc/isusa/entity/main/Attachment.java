@@ -1,6 +1,7 @@
 package org.ccpc.isusa.entity.main;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -24,12 +25,17 @@ public class Attachment {
     private Application application;
 
     @Column(name = "FileName", length = 255, nullable = false)
+    @NotBlank
+    @Size(max = 255)
     private String fileName;
 
     @Column(name = "FilePath", length = 1000, nullable = false)
+    @NotBlank
+    @Size(max = 1000)
     private String filePath;
 
     @CreationTimestamp
     @Column(name = "UploadedDate", updatable = false)
+    @NotNull
     private LocalDateTime uploadedDate;
 }

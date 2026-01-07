@@ -1,6 +1,7 @@
 package org.ccpc.isusa.entity.main;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -21,17 +22,21 @@ public class Comment {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ApplicationID", nullable = false)
+    @NotNull
     private Application application;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "UserID", nullable = false)
+    @NotNull
     private User user;
 
     @Lob
     @Column(name = "CommentText", nullable = false)
+    @NotBlank
     private String commentText;
 
     @CreationTimestamp
     @Column(name = "CreatedDate", updatable = false)
+    @NotNull
     private LocalDateTime createdDate;
 }

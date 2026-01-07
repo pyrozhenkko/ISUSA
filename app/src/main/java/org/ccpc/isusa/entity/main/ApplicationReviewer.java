@@ -1,6 +1,8 @@
 package org.ccpc.isusa.entity.main;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -14,20 +16,24 @@ import java.time.LocalDateTime;
 public class ApplicationReviewer {
 
     @EmbeddedId
+    @NotNull
     private ApplicationReviewerId id = new ApplicationReviewerId();
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("applicationId") // Пов'язує з полем applicationId в EmbeddedId
+    @MapsId("applicationId")
     @JoinColumn(name = "ApplicationID")
+    @NotNull
     private Application application;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("reviewerUserId") // Пов'язує з полем reviewerUserId в EmbeddedId
+    @MapsId("reviewerUserId")
     @JoinColumn(name = "ReviewerUserID")
+    @NotNull
     private User reviewerUser;
 
     @Lob
     @Column(name = "RecommendationText")
+    @Size(max = 2000)
     private String recommendationText;
 
     @Column(name = "IsApproved")

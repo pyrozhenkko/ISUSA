@@ -1,6 +1,7 @@
 package org.ccpc.isusa.entity.main;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -19,6 +20,8 @@ public class ApplicationStatus {
     private Integer statusId;
 
     @Column(name = "status_name", length = 50, nullable = false, unique = true)
+    @NotBlank
+    @Size(max = 50)
     private String statusName;
 
     @OneToMany(mappedBy = "applicationStatus", fetch = FetchType.LAZY)
@@ -27,7 +30,7 @@ public class ApplicationStatus {
     @OneToMany(mappedBy = "status", fetch = FetchType.LAZY)
     private Set<ApplicationHistory> histories;
 
-    // Константи для швидкого доступу до статусів
+    // Predefined status names
     public static final String DRAFT = "Чернетка";
     public static final String NEW = "Нова";
     public static final String IN_REVIEW = "На розгляді";

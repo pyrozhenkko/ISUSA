@@ -1,6 +1,7 @@
 package org.ccpc.isusa.entity.main;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -33,20 +34,28 @@ public class User implements UserDetails {
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "roleid", nullable = false)
+    @NotNull
     private Role role;
 
     @ManyToOne
     @JoinColumn(name = "profile_imaget_id")
     private Attachment profileImageId;
+
     @Column(name = "position", length = 100)
+    @Size(max = 100)
     private String position;
 
     @Column(name = "date_of_birth")
+    @Past
     private LocalDateTime dateOfBirth;
 
     @Column(name = "username", length = 100, nullable = false, unique = true)
+    @NotBlank
+    @Size(min = 3, max = 100)
     private String username;
+
     @Column(name = "failed_login_attempts")
+    @Min(0)
     private Integer failedLoginAttempts = 0;
 
     @Column(name = "account_locked_until")
@@ -59,38 +68,55 @@ public class User implements UserDetails {
     private LocalDateTime passwordChangedDate;
 
     @Column(name = "password_hash", length = 256, nullable = false)
+    @NotBlank
+    @Size(min = 60, max = 256)
     private String passwordHash;
 
-    @Column(name  = "first_name", length = 50)
+    @Column(name = "first_name", length = 50)
+    @Size(max = 50)
     private String firstName;
 
-    @Column(name  = "middle_name", length = 50)
+    @Column(name = "middle_name", length = 50)
+    @Size(max = 50)
     private String middleName;
 
-    @Column(name  = "last_name", length = 50)
+    @Column(name = "last_name", length = 50)
+    @Size(max = 50)
     private String lastName;
 
-
     @Column(name = "phone_number", length = 20)
-    private String phoneNumber = "N/A";
+    @Pattern(
+            regexp = "^\\+?[0-9]{7,20}$",
+            message = "Invalid phone number"
+    )
+    private String phoneNumber = "+380000000000";
 
     @Column(name = "faculty", length = 100, nullable = false)
+    @NotBlank
+    @Size(max = 100)
     private String faculty;
 
-    @Column( name = "department", length = 100, nullable = false)
+    @Column(name = "department", length = 100, nullable = false)
+    @NotBlank
+    @Size(max = 100)
     private String department;
 
-    @Column (name = "enrolled_date")
+    @Column(name = "enrolled_date")
     private LocalDateTime enrolledDate;
 
     @Column(name = "email", length = 100, unique = true, nullable = false)
+    @NotBlank
+    @Email
+    @Size(max = 100)
     private String email;
 
     @Column(name = "is_active")
+    @NotNull
     private Boolean isActive = true;
 
-    // === SOFT-DELETE ===
+    // === SOFT DELETE ===
     @Column(name = "is_deleted")
+    @NotNull
     private Boolean isDeleted = false;
 
     @Column(name = "deleted_date")
@@ -103,7 +129,6 @@ public class User implements UserDetails {
     @UpdateTimestamp
     @Column(name = "updated_date")
     private LocalDateTime updatedDate;
-
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Student student;
@@ -123,7 +148,7 @@ public class User implements UserDetails {
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     private Set<Log> logs;
 
-    // === UserDetails ===
+    // === Utility ===
     @Transient
     public String getFullName() {
         StringBuilder fullName = new StringBuilder();
@@ -131,12 +156,10 @@ public class User implements UserDetails {
         if (lastName != null && !lastName.isBlank()) {
             fullName.append(lastName);
         }
-
         if (firstName != null && !firstName.isBlank()) {
             if (fullName.length() > 0) fullName.append(" ");
             fullName.append(firstName);
         }
-
         if (middleName != null && !middleName.isBlank()) {
             if (fullName.length() > 0) fullName.append(" ");
             fullName.append(middleName);
@@ -144,6 +167,8 @@ public class User implements UserDetails {
 
         return fullName.toString().trim();
     }
+
+    // === UserDetails ===
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return this.role.getPermissions().stream()
@@ -152,21 +177,32 @@ public class User implements UserDetails {
     }
 
     @Override
-    public String getPassword() { return this.passwordHash; }
+    public String getPassword() {
+        return this.passwordHash;
+    }
 
     @Override
-    public String getUsername() { return this.username; }
+    public String getUsername() {
+        return this.username;
+    }
 
     @Override
-    public boolean isAccountNonExpired() { return true; }
+    public boolean isAccountNonExpired() {
+        return true;
+    }
 
     @Override
-    public boolean isAccountNonLocked() { return true; }
+    public boolean isAccountNonLocked() {
+        return true;
+    }
 
     @Override
-    public boolean isCredentialsNonExpired() { return true; }
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
 
     @Override
-    public boolean isEnabled() { return this.isActive; }
-
+    public boolean isEnabled() {
+        return this.isActive;
+    }
 }
