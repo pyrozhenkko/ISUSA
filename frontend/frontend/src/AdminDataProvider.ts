@@ -11,15 +11,17 @@ const httpClient = (url: string, options: any = {}) => {
     return fetchUtils.fetchJson(url, options);
 };
 
-const mapResource = (resource: string, item: any) => ({
-    ...item,
-    id: resource.startsWith('users') ? item.userId : item.applicationId,
-});
+const mapResource = (resource: string, item: any) => {
+    const isUserResource = resource.includes('users');
+    return {
+        ...item,
+        id: isUserResource ? item.userId : item.applicationId,
+    };
+};
 
 export const adminDataProvider: DataProvider = {
     getList: async (resource, params) => {
         const url = `${apiUrl}/${resource}`;
-        
         const { json } = await httpClient(url);
         
         return {
@@ -50,7 +52,9 @@ export const adminDataProvider: DataProvider = {
             body: JSON.stringify(params.data),
         });
         
-        return { data: { ...json, id: json.userId } as any };
+        return { 
+            data: mapResource(resource, json) 
+        };
     },
 
     update: async (resource, params) => {
@@ -59,19 +63,23 @@ export const adminDataProvider: DataProvider = {
             method: 'PUT',
             body: JSON.stringify(params.data),
         });
-        return { data: { ...json, id: params.id } as any };
+        return { 
+            data: mapResource(resource, json) 
+        };
     },
 
     delete: async (resource, params) => {
         const url = `${apiUrl}/${resource}/${params.id}`;
         await httpClient(url, { method: 'DELETE' });
-        return { data: (params.previousData || { id: params.id }) as any };
+        return { 
+        data: params.previousData ? params.previousData : { id: params.id } 
+    } as any;
     },
 
     deleteMany: async (resource, params) => {
-        for (const id of params.ids) {
-            await httpClient(`${apiUrl}/${resource}/${id}`, { method: 'DELETE' });
-        }
+        await Promise.all(
+            params.ids.map(id => httpClient(`${apiUrl}/${resource}/${id}`, { method: 'DELETE' }))
+        );
         return { data: params.ids };
     },
     
@@ -84,8 +92,13 @@ export const adminDataProvider: DataProvider = {
         };
     },
 
-    getManyReference: async () => ({ data: [], total: 0 }),
-    updateMany: async () => ({ data: [] }),
+    getManyReference: async (resource, params) => {
+        return { data: [], total: 0 };
+    },
+
+    updateMany: async (resource, params) => {
+        return { data: params.ids };
+    },
     
     getStudentHistory: async (id: number) => {
         const { json } = await httpClient(`${apiUrl}/users/${id}/student-history`);

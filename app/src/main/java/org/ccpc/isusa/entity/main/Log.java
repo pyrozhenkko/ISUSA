@@ -21,30 +21,37 @@ public class Log {
     @Column(name = "LogID")
     private Integer logId;
 
+    /**
+     * Дата та час логування.
+     * Використовуємо @Builder.Default, щоб при створенні через Builder
+     * поле не було null до моменту перевірки валідатором.
+     */
     @CreationTimestamp
-    @Column(name = "LogDate", updatable = false)
-    @NotNull
-    private LocalDateTime logDate;
+    @Column(name = "LogDate", updatable = false, nullable = false)
+    @NotNull(message = "Дата логування не може бути порожньою")
+    @Builder.Default
+    private LocalDateTime logDate = LocalDateTime.now();
 
     // INFO, ERROR, WARN, SECURITY
     @Column(name = "Level", length = 20)
+    @Size(max = 20)
     private String level;
 
-    // (може бути null, якщо це системна дія)
+    // Користувач, який вчинив дію (може бути null для системних подій)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "UserID")
     private User user;
 
-    // Опис дії
+    // Детальний опис події
     @Column(name = "Message", columnDefinition = "TEXT")
     private String message;
 
-    // Наприклад: "Application", "User", "Student"
+    // Тип сутності, з якою проводилась дія (напр. "Application")
     @Column(name = "EntityType", length = 50)
     @Size(max = 50)
     private String entityType;
 
-    // ID конкретного запису (наприклад, applicationId)
+    // ID конкретного запису (наприклад, ID заявки)
     @Column(name = "EntityID")
     private Integer entityId;
 }

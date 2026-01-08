@@ -100,38 +100,50 @@ const LecturerView: React.FC<StudentPortalProps> = ({ userRole, onViewDetail }) 
     const [hoveredStudentData, setHoveredStudentData] = useState<any | null>(null);
     const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
-    useEffect(() => {
-        const fetchAll = async () => {
-            if (userRole !== 'DEANERY_STAFF' && userRole !== 'ADMIN') return;
-            const token = localStorage.getItem('authToken');
-            try {
-                setLoading(true);
-                const response = await fetch(`http://localhost:8081/api/applications`, { 
-                    method: 'GET',
-                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+useEffect(() => {
+    const fetchAll = async () => {
+        if (userRole !== 'DEANERY_STAFF' && userRole !== 'ADMIN') return;
+        const token = localStorage.getItem('authToken');
+        try {
+            setLoading(true);
+            const response = await fetch(`http://localhost:8081/api/applications`, { 
+                method: 'GET',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            });
+            if (response.ok) {
+                const data = await response.json(); 
+                
+                const officialApplications = data.filter((app: any) => {
+                    const statusName = app.applicationStatus?.statusName?.toLowerCase() || '';
+                    return !statusName.includes('чернетка') && !statusName.includes('draft');
                 });
-                if (response.ok) {
-                    const data = await response.json(); 
-                    setApplications(data.map((app: any) => ({
+
+                setApplications(officialApplications.map((app: any) => {
+                    const user = app.student?.userResponseDto;
+                    const fullName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'Невідомо';
+                    
+                    console.log(`App ID: ${app.applicationId}, Status ID: ${app.applicationStatus?.statusId}, Name: ${app.applicationStatus?.statusName}`);
+
+                    return {
                         id: app.applicationId,
                         type: app.applicationType?.typeName || 'Заява',
-                        studentId: app.student?.userId,
                         date: new Date(app.createdDate).toLocaleString('uk-UA'),
-                        status: app.applicationStatus?.statusName || 'На розгляді',
-                        studentName: app.student ? `${app.student.firstName} ${app.student.lastName}` : 'Невідомо',
-                        comment: app.content,
+                        status: app.applicationStatus?.statusName || 'На розгляді', 
+                        
+                        studentName: fullName,
                         studentFullInfo: app.student 
-                    })));
-                }
-            } catch (err) { 
-                console.error('Помилка завантаження'); 
-            } finally { 
-                setLoading(false); 
+                    };
+                }));
             }
-        };
-        fetchAll();
-    }, [userRole]);
-
+        } catch (err) { 
+            console.error('Помилка завантаження'); 
+        } finally { 
+            setLoading(false); 
+        }
+    };
+    fetchAll();
+}, [userRole]);
+    
     const handleUpdateStatus = async (appId: number, statusId: number, comment: string = "") => {
         const token = localStorage.getItem('authToken');
         try {
@@ -145,7 +157,7 @@ const LecturerView: React.FC<StudentPortalProps> = ({ userRole, onViewDetail }) 
             });
 
             if (response.ok) {
-                const statusNames: { [key: number]: string } = { 3: 'Схвалено', 4: 'Відхилено' };
+                const statusNames: { [key: number]: string } = { 5: 'Схвалено', 6: 'Відхилено' };
                 setApplications(prev => prev.map(app => 
                     app.id === appId ? { ...app, status: statusNames[statusId] || app.status } : app
                 ));
@@ -167,6 +179,7 @@ const LecturerView: React.FC<StudentPortalProps> = ({ userRole, onViewDetail }) 
 
     return (
         <div className="space-y-6">
+            {/* Панель пошуку */}
             <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl">
                 <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                     <h2 className="text-xl font-bold flex items-center gap-3">
@@ -196,22 +209,32 @@ const LecturerView: React.FC<StudentPortalProps> = ({ userRole, onViewDetail }) 
                     {loading ? <div className="py-10 text-center"><Loader className="animate-spin mx-auto text-blue-500" /></div> : 
                     <div className="grid gap-3">
                         {filteredApplications.map(app => (
-                            <div key={app.id} className="p-4 bg-slate-900/50 border border-slate-700 hover:border-blue-500/50 rounded-xl transition-all group flex items-center justify-between">
+                            <div 
+                                key={app.id} 
+                                onClick={() => onViewDetail && onViewDetail(app.id)}
+                                className="p-4 bg-slate-900/50 border border-slate-700 hover:border-blue-500/50 rounded-xl transition-all group flex items-center justify-between cursor-pointer"
+                            >
                                 <div className="space-y-1">
                                     <div className="flex items-center gap-2">
-                                        <p className="font-bold text-slate-200">{app.type}</p>
+                                        <p className="font-bold text-slate-200 group-hover:text-blue-400 transition-colors">
+                                            {app.type}
+                                        </p>
                                         <span className="text-[10px] text-slate-600 font-mono">ID: {app.id}</span>
                                     </div>
+                                    
                                     <p 
-                                      className="text-sm text-blue-400 font-medium cursor-help relative inline-block underline decoration-blue-500/30 underline-offset-4"
-                                      // Використовуємо дані, які вже є в об'єкті заявки
-                                      onMouseEnter={() => setHoveredStudentData((app as any).studentFullInfo)}
-                                      onMouseLeave={() => setHoveredStudentData(null)}
-                                      onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}
+                                        className="text-sm text-blue-400 font-medium cursor-help relative inline-block underline decoration-blue-500/30 underline-offset-4"
+                                        onMouseEnter={() => setHoveredStudentData((app as any).studentFullInfo)}
+                                        onMouseLeave={() => setHoveredStudentData(null)}
+                                        onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}
+                                        onClick={(e) => e.stopPropagation()} 
                                     >
-                                      Студент: {app.studentName}
+                                        Студент: {app.studentName}
                                     </p>
-                                    <p className="text-[10px] text-slate-500 flex items-center gap-1"><Calendar size={10}/> {app.date}</p>
+                                    
+                                    <p className="text-[10px] text-slate-500 flex items-center gap-1">
+                                        <Calendar size={10}/> {app.date}
+                                    </p>
                                 </div>
 
                                 <div className="flex items-center gap-3">
@@ -219,26 +242,12 @@ const LecturerView: React.FC<StudentPortalProps> = ({ userRole, onViewDetail }) 
                                         {app.status}
                                     </span>
                                     
-                                    <div className="flex gap-1 border-l border-slate-700 pl-3 ml-1">
+                                    <div className="flex gap-1 border-l border-slate-700 pl-3 ml-1">    
                                         <button 
-                                            onClick={() => handleUpdateStatus(app.id, 3, "Схвалено")}
-                                            className="p-2 text-emerald-500 hover:bg-emerald-500/10 rounded-lg transition-colors"
-                                            title="Схвалити"
-                                        >
-                                            <CheckCircle size={18} />
-                                        </button>
-                                        <button 
-                                            onClick={() => {
-                                                const reason = prompt("Вкажіть причину відхилення:");
-                                                if (reason) handleUpdateStatus(app.id, 4, reason);
+                                            onClick={(e) => {
+                                                e.stopPropagation(); 
+                                                onViewDetail && onViewDetail(app.id);
                                             }}
-                                            className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
-                                            title="Відхилити"
-                                        >
-                                            <XCircle size={18} />
-                                        </button>
-                                        <button 
-                                            onClick={() => onViewDetail && onViewDetail(app.id)}
                                             className="p-2 bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white rounded-lg transition-all"
                                             title="Деталі"
                                         >
@@ -252,7 +261,7 @@ const LecturerView: React.FC<StudentPortalProps> = ({ userRole, onViewDetail }) 
                 </div>
             </div>
 
-            {/* ПРЕВ'Ю СТУДЕНТА - Тепер працює миттєво */}
+            {/* ПРЕВ'Ю СТУДЕНТА */}
             {hoveredStudentData && (
                 <div 
                     className="fixed z-[200] w-72 bg-slate-800 border border-slate-600 rounded-2xl shadow-2xl p-5 animate-in fade-in zoom-in duration-200 pointer-events-none"
@@ -264,19 +273,27 @@ const LecturerView: React.FC<StudentPortalProps> = ({ userRole, onViewDetail }) 
                     <div className="space-y-4">
                         <div className="flex items-center gap-4">
                             <div className="w-16 h-16 bg-slate-900 rounded-full border-2 border-blue-500/30 overflow-hidden flex-shrink-0">
-                                <img 
-                                    src={`${API_PROFILE_URL}/profile-image/${hoveredStudentData.userId}`} 
-                                    alt="Avatar"
-                                    className="w-full h-full object-cover"
-                                    onError={(e) => (e.currentTarget.src = 'https://ui-avatars.com/api/?name=' + hoveredStudentData.firstName)}
-                                />
+                                {/* Додаємо перевірку на наявність об'єкта userResponseDto */}
+                                {hoveredStudentData?.userResponseDto?.userId ? (
+                                    <SecureImage 
+                                        src={`${API_PROFILE_URL}/profile-image/${hoveredStudentData.userResponseDto.userId}`} 
+                                        alt="Avatar"
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center bg-slate-800 text-slate-500">
+                                        <User size={32} />
+                                    </div>
+                                )}
                             </div>
-                            <div>
+                                                        <div>
+                                {/* ТУТ ПІДТЯГУЄМО ІМ'Я ТА ПРІЗВИЩЕ */}
                                 <h4 className="font-bold text-white leading-tight">
-                                    {hoveredStudentData.firstName} {hoveredStudentData.lastName}
+                                    {hoveredStudentData.userResponseDto?.firstName || '—'} {hoveredStudentData.userResponseDto?.lastName || ''}
                                 </h4>
+                                {/* ТУТ ФАКУЛЬТЕТ */}
                                 <p className="text-[10px] text-slate-400 uppercase tracking-tighter mt-1">
-                                    {hoveredStudentData.faculty || "Факультет не вказано"}
+                                    {hoveredStudentData.userResponseDto?.faculty || "Факультет не вказано"}
                                 </p>
                             </div>
                         </div>
@@ -284,11 +301,11 @@ const LecturerView: React.FC<StudentPortalProps> = ({ userRole, onViewDetail }) 
                         <div className="grid grid-cols-2 gap-2 border-t border-slate-700 pt-3">
                             <div className="text-center p-2 bg-slate-900/50 rounded-lg">
                                 <p className="text-[8px] text-slate-500 uppercase font-bold">Група</p>
-                                <p className="text-xs text-blue-400 font-bold">{hoveredStudentData.student?.groupName || "—"}</p>
+                                <p className="text-xs text-blue-400 font-bold">{hoveredStudentData.groupId || "—"}</p>
                             </div>
                             <div className="text-center p-2 bg-slate-900/50 rounded-lg">
-                                <p className="text-[8px] text-slate-500 uppercase font-bold">Курс</p>
-                                <p className="text-xs text-emerald-400 font-bold">{hoveredStudentData.student?.yearOfStudy || "—"}</p>
+                                <p className="text-[8px] text-slate-500 uppercase font-bold">Спеціальність</p>
+                                <p className="text-[10px] text-emerald-400 font-bold leading-tight">{hoveredStudentData.specialty || "—"}</p>
                             </div>
                         </div>
                     </div>
@@ -403,40 +420,60 @@ const [notificationList, setNotificationList] = useState([
     const token = localStorage.getItem('authToken');
     setIsSendingComment(true);
     try {
-        const response = await fetch(`http://localhost:8081/api/applications/${viewingApplication.applicationId}/comments`, {
-            method: 'POST',
+        const response = await fetch(`${API_BASE_URL}/${viewingApplication.applicationId}/status`, {
+            method: 'PUT',
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: newComment })
+            body: JSON.stringify({ 
+                statusId: viewingApplication.applicationStatus.statusId, 
+                comment: newComment 
+            })
         });
+
+        const updatedData = await response.json();
+        console.log("Отримано після додавання коментаря:", updatedData);
+
         if (response.ok) {
-            const addedComment = await response.json();
-            setViewingApplication({
-                ...viewingApplication,
-                comments: [...(viewingApplication.comments || []), addedComment]
-            });
+            setViewingApplication(updatedData); 
             setNewComment('');
         }
-    } catch (e) { alert("Помилка при додаванні коментаря"); }
-    finally { setIsSendingComment(false); }
+    } catch (e) { 
+        alert("Помилка при додаванні"); 
+    } finally { 
+        setIsSendingComment(false); 
+    }
 };
 
-  const handleViewDetails = async (id: number) => {
+const handleViewDetails = async (id: number) => {
     const token = localStorage.getItem('authToken');
     setVerificationResult(null);
+    
     try {
         setIsLoadingDetails(true);
-        const response = await fetch(`${API_BASE_URL}/my/${id}`, {
+        const isStaff = userRole === 'DEANERY_STAFF' || userRole === 'ADMIN';
+        
+        const url = isStaff 
+            ? `http://localhost:8081/api/applications/${id}`  // Шлях для деканату
+            : `http://localhost:8081/api/applications/my/${id}`; // Шлях для студента
+
+        console.log(`Запит деталей. Роль: ${userRole}, URL: ${url}`);
+
+        const response = await fetch(url, {
             headers: { 'Authorization': `Bearer ${token}` },
         });
+
         if (response.ok) {
             const data = await response.json();
+            console.log("Дані заявки успішно отримано:", data);
             setViewingApplication(data);
             setShowViewModal(true);
         } else {
-            alert("Не вдалося завантажити деталі заявки");
+            const errorText = await response.text();
+            console.error("Помилка завантаження деталей:", response.status, errorText);
+            alert(`Помилка ${response.status}: У вас немає доступу до цієї заяви або вона не існує.`);
         }
     } catch (e) {
-        alert("Помилка мережі");
+        console.error("Мережева помилка:", e);
+        alert("Помилка з'єднання з сервером.");
     } finally {
         setIsLoadingDetails(false);
     }
@@ -457,11 +494,22 @@ const [notificationList, setNotificationList] = useState([
                     const rawStatus = app.applicationStatus?.statusName?.toLowerCase() || '';
                     
                     let mappedStatus: MyApplication['status'] = 'pending';
-                    if (rawStatus.includes('чернетка')) mappedStatus = 'draft';
-                    else if (rawStatus.includes('нова')) mappedStatus = 'нова';
-                    else if (rawStatus.includes('в обробці') || rawStatus.includes('розгляд')) mappedStatus = 'in-review';
-                    else if (rawStatus.includes('схвалено')) mappedStatus = 'approved';
-                    else if (rawStatus.includes('відхилено')) mappedStatus = 'rejected';
+
+                    if (rawStatus.includes('чернетка')) {
+                        mappedStatus = 'draft';
+                    } 
+                    else if (rawStatus.includes('нова')) {
+                        mappedStatus = 'нова';
+                    } 
+                    else if (rawStatus.includes('схвалено') || rawStatus.includes('approved')) {
+                        mappedStatus = 'approved';
+                    } 
+                    else if (rawStatus.includes('відхилено') || rawStatus.includes('rejected') || rawStatus.includes('скасовано')) {
+                        mappedStatus = 'rejected';
+                    } 
+                    else if (rawStatus.includes('в обробці') || rawStatus.includes('розгляд')) {
+                        mappedStatus = 'in-review';
+                    }
 
                     return {
                         id: app.applicationId,
@@ -496,46 +544,63 @@ const handleAction = async () => {
 
     const typeId = APPLICATION_TYPE_MAP[selectedType];
     const token = localStorage.getItem('authToken');
-    const formData = new FormData();
     
-    let url = `${API_BASE_URL}/draft`, method = 'POST';
-
+    // Базові дані заявки
     const applicationData: any = {
         typeId,
         title: selectedType,
         content: newApplicationDescription
     };
 
-    if (editingAppId) {
-        if (isConfirmedToSign) {
-            url = `${API_BASE_URL}/${editingAppId}/sign`;
-            applicationData.password = signPassword;
-        } else {
-            url = `${API_BASE_URL}/${editingAppId}`;
-            method = 'PUT';
-        }
-    } else if (isConfirmedToSign) {
-        url = `${API_BASE_URL}/full-submit`;
-        applicationData.password = signPassword;
-    }
-
-    formData.append('data', new Blob([JSON.stringify(applicationData)], {
-        type: 'application/json'
-    }));
-
-    if (selectedFile) {
-        formData.append('file', selectedFile); 
-    }
-
     try {
-        const response = await fetch(url, {
-            method,
-            headers: { 
-                'Authorization': `Bearer ${token}`
-            },
-            body: formData, 
-        });
+        let response;
+        let url = `${API_BASE_URL}/draft`;
+        let method = 'POST';
 
+        // 1. ВИЗНАЧАЄМО URL ТА МЕТОД
+        if (editingAppId) {
+            if (isConfirmedToSign) {
+                url = `${API_BASE_URL}/${editingAppId}/sign`;
+                applicationData.password = signPassword;
+            } else {
+                url = `${API_BASE_URL}/${editingAppId}`;
+                method = 'PUT';
+            }
+        } else if (isConfirmedToSign) {
+            url = `${API_BASE_URL}/full-submit`;
+            applicationData.password = signPassword;
+        }
+
+        // 2. ЛОГІКА ВІДПРАВКИ (FormData vs JSON)
+        if (isConfirmedToSign) {
+            // Використовуємо FormData для подачі (може бути файл)
+            const formData = new FormData();
+            formData.append('data', new Blob([JSON.stringify(applicationData)], {
+                type: 'application/json'
+            }));
+
+            if (selectedFile) {
+                formData.append('file', selectedFile); 
+            }
+
+            response = await fetch(url, {
+                method: 'POST', // Підпис та full-submit зазвичай POST
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData, 
+            });
+        } else {
+            // Використовуємо чистий JSON для чернеток
+            response = await fetch(url, {
+                method,
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(applicationData),
+            });
+        }
+
+        // 3. ОБРОБКА ВІДПОВІДІ
         if (response.ok) {
             const result = await response.json();
             const updatedApp: MyApplication = { 
@@ -584,21 +649,48 @@ const handleAction = async () => {
     } catch (e) { alert("Помилка"); }
   };
 
-const getStatusStyle = (status: string) => {
+const getStatusStyles = (status: string) => {
     const s = status.toLowerCase();
-    if (s.includes('схвалено')) return 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20';
-    if (s.includes('відхилено') || s.includes('скасовано')) return 'text-red-500 bg-red-500/10 border-red-500/20';
-    if (s.includes('потребує')) return 'text-blue-500 bg-blue-500/10 border-blue-500/20';
-    return 'text-amber-500 bg-amber-500/10 border-amber-500/20'; 
+    
+    // Зелений: Схвалено / Approved
+    if (s.includes('схвалено') || s.includes('approved')) {
+        return 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20';
+    }
+    
+    // Червоний: Відхилено / Rejected / Скасовано
+    if (s.includes('відхилено') || s.includes('rejected') || s.includes('скасовано')) {
+        return 'text-red-500 bg-red-500/10 border-red-500/20';
+    }
+    
+    // Синій: Нова заява / Потребує уваги
+    if (s.includes('нова') || s.includes('потребує') || s.includes('new')) {
+        return 'text-blue-500 bg-blue-500/10 border-blue-500/20';
+    }
+    
+    // Помаранчевий (за замовчуванням): На розгляді / In Review
+    return 'text-amber-500 bg-amber-500/10 border-amber-500/20';
 };
 
-  if (userRole === 'DEANERY_STAFF' || userRole === 'ADMIN') {
+if (userRole === 'DEANERY_STAFF' || userRole === 'ADMIN') {
     return (
       <div className="min-h-screen bg-slate-900 text-white">
-        <header className="border-b border-slate-800 p-4 flex justify-between items-center">
-            <div className="flex items-center gap-2"><BookOpen className="text-blue-500" /> <span className="font-bold">ISUSA ADMIN</span></div>
-            <button onClick={handleLogout} className="p-2 text-slate-400 hover:text-red-500"><LogOut /></button>
+        {/* Header */}
+        <header className="border-b border-slate-800 p-4 flex justify-between items-center bg-slate-900 sticky top-0 z-50">
+            <div className="flex items-center gap-2">
+                <BookOpen className="text-blue-500" /> 
+                <span className="font-bold tracking-tight">ISUSA ADMIN</span>
+            </div>
+            <div className="flex items-center gap-4">
+                <span className="text-xs text-slate-500 bg-slate-800 px-3 py-1 rounded-full border border-slate-700">
+                    Персонал: {userData?.firstName} {userData?.lastName}
+                </span>
+                <button onClick={handleLogout} className="p-2 text-slate-400 hover:text-red-500 transition-colors">
+                    <LogOut size={20} />
+                </button>
+            </div>
         </header>
+
+        {/* Основний контент (Список) */}
         <main className="max-w-7xl mx-auto p-8">
             <LecturerView 
                 handleLogout={handleLogout} 
@@ -608,6 +700,226 @@ const getStatusStyle = (status: string) => {
                 onViewDetail={handleViewDetails}
             />
         </main>
+
+        {/* МОДАЛЬНЕ ВІКНО ПЕРЕГЛЯДУ (Вставлено сюди) */}
+        {showViewModal && viewingApplication && (
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[110]">
+                <div className="bg-slate-800 border border-slate-700 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl animate-in zoom-in duration-200">
+                    
+                    {/* Заголовок модалки */}
+                    <div className="p-6 border-b border-slate-700 flex justify-between items-center bg-slate-800/50">
+                        <div>
+                            <h2 className="text-xl font-bold text-white">
+                                {viewingApplication.applicationType?.typeName || viewingApplication.title || "Перегляд заяви"}
+                            </h2>
+                            <p className="text-xs text-slate-500 font-mono">ID: {viewingApplication.applicationId}</p>
+                        </div>
+                        <button onClick={() => closeModal()} className="text-slate-400 hover:text-white p-2">
+                            <XCircle size={24} />
+                        </button>
+                    </div>
+                    
+                    <div className="p-8 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                        
+                        {/* 1. ІНФОРМАЦІЯ ПРО СТУДЕНТА */}
+                        <div className="flex items-center gap-4 p-4 bg-blue-600/5 border border-blue-500/20 rounded-2xl shadow-inner">
+                            <div className="w-14 h-14 bg-slate-900 rounded-full border-2 border-blue-500/30 overflow-hidden flex-shrink-0">
+                                {viewingApplication.student?.userResponseDto?.userId ? (
+                                    <SecureImage 
+                                        src={`${API_PROFILE_URL}/profile-image/${viewingApplication.student.userResponseDto.userId}`} 
+                                        alt="Avatar"
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center bg-slate-800 text-slate-600">
+                                        <User size={24} />
+                                    </div>
+                                )}
+                            </div>
+                            <div>
+                                <p className="text-[10px] uppercase font-black text-blue-500 tracking-widest mb-0.5">Заявник</p>
+                                <h4 className="text-white font-bold text-lg leading-none">
+                                    {viewingApplication.student?.userResponseDto 
+                                        ? `${viewingApplication.student.userResponseDto.firstName} ${viewingApplication.student.userResponseDto.lastName}` 
+                                        : `Студент (ID: ${viewingApplication.student?.studentId})`}
+                                </h4>
+                                <p className="text-xs text-slate-400 mt-1">
+                                    Група: <span className="text-slate-200">{viewingApplication.student?.groupId || '—'}</span> • 
+                                    Факультет: <span className="text-slate-200">
+                                        {viewingApplication.student?.faculty || viewingApplication.student?.userResponseDto?.faculty || '—'}
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* 2. СТАТУС ТА ДАТА */}
+                        <div className="grid grid-cols-2 gap-6">
+                            <div className="space-y-1">
+                                <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Поточний статус</p>
+                                <span className={`px-3 py-1 rounded-full text-[10px] font-bold border uppercase tracking-wider ${getStatusStyles(viewingApplication.applicationStatus?.statusName || 'pending')}`}>
+                                    {viewingApplication.applicationStatus?.statusName}
+                                </span>
+                            </div>
+                            <div className="space-y-1 text-right">
+                                <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Подано</p>
+                                <p className="text-sm text-slate-200 flex items-center justify-end gap-2">
+                                    <Clock size={14} className="text-blue-500" />
+                                    {new Date(viewingApplication.createdDate).toLocaleString('uk-UA')}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* 3. ЗМІСТ ЗАЯВИ */}
+                        <div className="space-y-2 bg-slate-900/50 p-5 rounded-2xl border border-slate-700/50 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-2 opacity-5 text-slate-100"><FileText size={40}/></div>
+                            <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Текст звернення</p>
+                            <p className="text-slate-200 text-sm leading-relaxed whitespace-pre-wrap relative z-10">
+                                {viewingApplication.content}
+                            </p>
+                        </div>
+
+                        {/* 4. ВКЛАДЕНІ ФАЙЛИ */}
+                        {viewingApplication.attachments && viewingApplication.attachments.length > 0 && (
+                            <div className="space-y-3">
+                                <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Прикріплені докази</p>
+                                <div className="grid grid-cols-1 gap-4">
+                                    {viewingApplication.attachments.map((file: any) => (
+                                        <div key={file.attachmentId} className="border border-slate-700 rounded-2xl overflow-hidden bg-slate-900 shadow-lg group">
+                                            <SecureImage 
+                                                src={`http://localhost:8081/api/attachments/download/${file.attachmentId}`} 
+                                                alt={file.fileName}
+                                                className="w-full h-auto max-h-96 object-contain cursor-zoom-in hover:opacity-90 transition-opacity"
+                                            />
+                                            <div className="p-3 bg-slate-800/80 text-[11px] text-slate-300 flex justify-between items-center border-t border-slate-700">
+                                                <span className="font-medium truncate pr-4">{file.fileName}</span>
+                                                <span className="text-slate-500 font-mono text-[9px] shrink-0">
+                                                    {new Date(file.uploadedDate).toLocaleDateString('uk-UA')}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* 5. БЛОК КОМЕНТАРІВ */}
+                        <div className="mt-8 pt-6 border-t border-slate-700/50 space-y-4">
+                            <div className="flex items-center gap-2 mb-2">
+                                <MessageSquare size={18} className="text-blue-500" />
+                                <h3 className="text-sm font-bold text-white uppercase tracking-wider">Обговорення та зауваження</h3>
+                            </div>
+
+                            <div className="space-y-4">
+                                {viewingApplication.comments && viewingApplication.comments.length > 0 ? (
+                                    [...viewingApplication.comments]
+                                        .sort((a: any, b: any) => new Date(a.createdDate).getTime() - new Date(b.createdDate).getTime()).map((c: any) => {
+                                            const isStudent = c.author?.roleName === 'STUDENT'; 
+                                            return (
+                                                <div key={c.commentId} className={`p-4 rounded-2xl border ${
+                                                    isStudent ? 'bg-slate-900/40 ml-10' : 'bg-blue-600/10 mr-10 shadow-lg'
+                                                }`}>
+                                                    <div className="flex justify-between items-center mb-1">
+                                                        <span className="text-[10px] font-black uppercase text-blue-400">
+                                                            {c.author?.firstName} {c.author?.lastName} {!isStudent && '(Деканат)'}
+                                                        </span>
+                                                        <span className="text-[9px] text-slate-600">
+                                                            {new Date(c.createdDate).toLocaleString('uk-UA')}
+                                                        </span>
+                                                    </div>
+                                                    {/* ВАЖЛИВО: Поле має називатися commentText, як у твоєму DTO */}
+                                                    <p className="text-sm text-slate-200">{c.commentText}</p>
+                                                </div>
+                                            );
+                                        })
+                                ) : (
+                                    <div className="text-center py-6 bg-slate-900/20 rounded-2xl border border-dashed border-slate-800">
+                                        <p className="text-xs text-slate-600 italic">Коментарів до цієї заяви ще не залишено</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Поле додавання коментаря */}
+                            <div className="mt-6 flex gap-2 animate-in slide-in-from-bottom-2">
+                                <input 
+                                    type="text"
+                                    value={newComment}
+                                    onChange={(e) => setNewComment(e.target.value)}
+                                    placeholder="Написати повідомлення студенту..."
+                                    className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm outline-none focus:border-blue-500 transition-all text-white placeholder:text-slate-600"
+                                />
+                                <button 
+                                    onClick={handleAddComment}
+                                    disabled={isSendingComment || !newComment.trim()}
+                                    className="bg-blue-600 hover:bg-blue-500 disabled:opacity-30 text-white px-5 rounded-xl transition-all flex items-center justify-center shadow-lg"
+                                >
+                                    {isSendingComment ? <Loader size={18} className="animate-spin" /> : <ArrowRight size={20} />}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ПАНЕЛЬ ДІЙ (Схвалити / Відхилити) */}
+                    <div className="p-6 bg-slate-900/80 border-t border-slate-700 flex flex-wrap gap-3 justify-between items-center">
+                        <div className="flex gap-2">
+                            <button 
+                                onClick={async () => {
+                                    if(window.confirm("Ви впевнені, що хочете СХВАЛИТИ цю заяву?")) {
+                                        const token = localStorage.getItem('authToken');
+                                        try {
+                                            const response = await fetch(`http://localhost:8081/api/applications/${viewingApplication.applicationId}/status`, {
+                                                method: 'PUT',
+                                                headers: { 
+                                                    'Authorization': `Bearer ${token}`, 
+                                                    'Content-Type': 'application/json' 
+                                                },
+                                                body: JSON.stringify({ statusId: 5, comment: "Заяву схвалено деканатом" }),
+                                            });
+
+                                            if (response.ok) {
+                                                alert("Заявку успішно схвалено!");
+                                                closeModal();
+                                                window.location.reload();
+                                            } else {
+                                                const err = await response.text();
+                                                alert("Помилка при оновленні: " + err);
+                                            }
+                                        } catch (e) {
+                                            alert("Помилка мережі");
+                                        }
+                                    }
+                                }}
+                                className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl transition-all font-bold text-sm flex items-center gap-2"
+                            >
+                                <CheckCircle size={16} /> Схвалити
+                            </button>
+                            <button 
+                                onClick={() => {
+                                    const reason = prompt("Вкажіть причину відхилення:");
+                                    if (reason) {
+                                        const token = localStorage.getItem('authToken');
+                                        fetch(`http://localhost:8081/api/applications/${viewingApplication.applicationId}/status`, {
+                                            method: 'PUT',
+                                            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ statusId: 6, comment: reason }),
+                                        }).then(() => { closeModal(); window.location.reload(); });
+                                    }
+                                }}
+                                className="px-6 py-2.5 bg-red-600/20 text-red-500 border border-red-500/30 hover:bg-red-600 hover:text-white rounded-xl transition-all font-bold text-sm flex items-center gap-2"
+                            >
+                                <XCircle size={16} /> Відхилити
+                            </button>
+                        </div>
+                        
+                        <button 
+                            onClick={() => closeModal()}
+                            className="px-8 py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition-all font-bold text-sm"
+                        >
+                            Закрити
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
       </div>
     );
   }
@@ -804,7 +1116,7 @@ const getStatusStyle = (status: string) => {
                           <p className="text-xs text-slate-500 flex items-center gap-1"><Calendar size={12} /> {app.date}</p>
                       </div>
                         <div className="flex items-center gap-3">
-                          <span className={`px-3 py-1 rounded-full text-[10px] font-bold border uppercase tracking-wider ${getStatusStyle(app.status)}`}>
+                          <span className={`px-3 py-1 rounded-full text-[10px] font-bold border uppercase tracking-wider ${getStatusStyles(app.status)}`}>
                                   {app.status}
                               </span>
                             {app.status === 'draft' && (
@@ -894,21 +1206,53 @@ const getStatusStyle = (status: string) => {
             {/* Заголовок модалки */}
             <div className="p-6 border-b border-slate-700 flex justify-between items-center bg-slate-800/50">
                 <div>
-                    <h2 className="text-xl font-bold text-white">{viewingApplication.applicationType?.typeName || viewingApplication.title}</h2>
+                    <h2 className="text-xl font-bold text-white">
+                        {viewingApplication.applicationType?.typeName || viewingApplication.title || "Перегляд заяви"}
+                    </h2>
                     <p className="text-xs text-slate-500 font-mono">ID: {viewingApplication.applicationId}</p>
                 </div>
-                <button onClick={() => closeModal()} className="text-slate-400 hover:text-white p-2">
+                <button onClick={() => closeModal()} className="text-slate-400 hover:text-white p-2 transition-colors">
                     <XCircle size={24} />
                 </button>
             </div>
             
             <div className="p-8 space-y-6 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                
+                {/* ІНФОРМАЦІЯ ПРО СТУДЕНТА (Завжди показуємо для деканату) */}
+                <div className="flex items-center gap-4 p-4 bg-blue-600/5 border border-blue-500/20 rounded-2xl">
+                    <div className="w-12 h-12 bg-slate-900 rounded-full border border-blue-500/30 overflow-hidden flex-shrink-0">
+                        {viewingApplication.student?.userResponseDto?.userId ? (
+                            <SecureImage 
+                                src={`${API_PROFILE_URL}/profile-image/${viewingApplication.student.userResponseDto.userId}`} 
+                                alt="Avatar"
+                                className="w-full h-full object-cover"
+                            />
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-slate-800 text-slate-500">
+                                <User size={20} />
+                            </div>
+                        )}
+                    </div>
+                    <div>
+                        <p className="text-[10px] uppercase font-bold text-blue-400 tracking-wider">Заявник</p>
+                        <h4 className="text-white font-bold">
+                            {viewingApplication.student?.userResponseDto 
+                                ? `${viewingApplication.student.userResponseDto.firstName} ${viewingApplication.student.userResponseDto.lastName}` 
+                                : `Студент (ID: ${viewingApplication.student?.studentId || 'Невідомо'})`}
+                        </h4>
+                        <p className="text-xs text-slate-400">
+                            Група: <span className="text-slate-200">{viewingApplication.student?.groupId || '—'}</span> • 
+                            Спеціальність: <span className="text-slate-200">{viewingApplication.student?.specialty || '—'}</span>
+                        </p>
+                    </div>
+                </div>
+
                 {/* Статус та Дата */}
                 <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-1">
                         <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Статус</p>
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold border uppercase tracking-wider ${getStatusStyle(viewingApplication.applicationStatus?.statusName || 'pending')}`}>
-                            {viewingApplication.applicationStatus?.statusName}
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold border uppercase tracking-wider ${getStatusStyles(viewingApplication.applicationStatus?.statusName || 'pending')}`}>
+                            {viewingApplication.applicationStatus?.statusName || 'Розглядається'}
                         </span>
                     </div>
                     <div className="space-y-1">
@@ -928,31 +1272,29 @@ const getStatusStyle = (status: string) => {
                     </p>
                 </div>
 
-                {/* Вкладені Файли (Фото) */}
-                    {viewingApplication.attachments && viewingApplication.attachments.length > 0 && (
-                        <div className="space-y-3">
-                            <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">
-                                Прикріплені документи
-                            </p>
-                            <div className="grid grid-cols-1 gap-4">
-                                {viewingApplication.attachments.map((file: any) => (
-                                    <div key={file.attachmentId} className="border border-slate-700 rounded-2xl overflow-hidden bg-slate-900 shadow-lg">
-                                        <SecureImage 
-                                            src={`http://localhost:8081/api/attachments/download/${file.attachmentId}`} 
-                                            alt={file.fileName}
-                                            className="w-full h-auto max-h-96 object-contain cursor-pointer hover:opacity-90 transition-opacity"
-                                        />
-                                        <div className="p-2 bg-slate-800/50 text-[10px] text-slate-400 flex justify-between">
-                                            <span>{file.fileName}</span>
-                                            <span>{file.fileSize ? (file.fileSize / 1024).toFixed(1) : '0'} KB</span>
-                                        </div>
+                {/* ВКЛАДЕНІ ФАЙЛИ */}
+                {viewingApplication.attachments && viewingApplication.attachments.length > 0 && (
+                    <div className="space-y-3">
+                        <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Прикріплені документи</p>
+                        <div className="grid grid-cols-1 gap-4">
+                            {viewingApplication.attachments.map((file: any) => (
+                                <div key={file.attachmentId} className="border border-slate-700 rounded-2xl overflow-hidden bg-slate-900 shadow-lg">
+                                    <SecureImage 
+                                        src={`http://localhost:8081/api/attachments/download/${file.attachmentId}`} 
+                                        alt={file.fileName}
+                                        className="w-full h-auto max-h-96 object-contain cursor-pointer hover:opacity-90 transition-opacity"
+                                    />
+                                    <div className="p-2 bg-slate-800/50 text-[10px] text-slate-400 flex justify-between items-center">
+                                        <span className="truncate pr-2">{file.fileName}</span>
+                                        <span className="shrink-0">{new Date(file.uploadedDate).toLocaleDateString('uk-UA')}</span>
                                     </div>
-                                ))}
-                            </div>
+                                </div>
+                            ))}
                         </div>
-                    )}
+                    </div>
+                )}
 
-                {/* БЛОК КОМЕНТАРІВ (Обговорення) */}
+                {/* БЛОК КОМЕНТАРІВ */}
                 <div className="mt-8 pt-6 border-t border-slate-700/50 space-y-4">
                     <div className="flex items-center gap-2 mb-4">
                         <MessageSquare size={18} className="text-blue-500" />
@@ -961,37 +1303,34 @@ const getStatusStyle = (status: string) => {
 
                     <div className="space-y-4">
                         {viewingApplication.comments && viewingApplication.comments.length > 0 ? (
-                            viewingApplication.comments
-                                .sort((a: any, b: any) => new Date(a.createdDate).getTime() - new Date(b.createdDate).getTime())
-                                .map((c: any) => (
-                                    <div key={c.commentId || c.id} className={`p-4 rounded-2xl border ${
-                                        c.authorRole === 'STUDENT' 
-                                            ? 'bg-slate-900/30 border-slate-800 ml-8' 
-                                            : 'bg-blue-600/5 border-blue-500/20 mr-8 shadow-sm shadow-blue-900/10'
-                                    }`}>
-                                        <div className="flex justify-between items-center mb-2">
-                                            <span className={`text-[10px] font-bold uppercase tracking-tight ${
-                                                c.authorRole === 'STUDENT' ? 'text-slate-400' : 'text-blue-400'
-                                            }`}>
-                                                {c.authorName} {c.authorRole !== 'STUDENT' && '(Деканат)'}
-                                            </span>
-                                            <span className="text-[9px] text-slate-600 font-mono">
-                                                {new Date(c.createdDate).toLocaleString('uk-UA')}
-                                            </span>
-                                        </div>
-                                        <p className="text-sm text-slate-300 leading-relaxed italic">
-                                            "{c.text}"
-                                        </p>
-                                    </div>
-                                ))
-                        ) : (
+                                    [...viewingApplication.comments]
+                                        .sort((a: any, b: any) => new Date(a.createdDate).getTime() - new Date(b.createdDate).getTime()).map((c: any) => {
+                                            const isStudent = c.author?.roleName === 'STUDENT'; 
+                                            return (
+                                                <div key={c.commentId} className={`p-4 rounded-2xl border ${
+                                                    isStudent ? 'bg-slate-900/40 ml-10' : 'bg-blue-600/10 mr-10 shadow-lg'
+                                                }`}>
+                                                    <div className="flex justify-between items-center mb-1">
+                                                        <span className="text-[10px] font-black uppercase text-blue-400">
+                                                            {c.author?.firstName} {c.author?.lastName} {!isStudent && '(Деканат)'}
+                                                        </span>
+                                                        <span className="text-[9px] text-slate-600">
+                                                            {new Date(c.createdDate).toLocaleString('uk-UA')}
+                                                        </span>
+                                                    </div>
+                                                    {/* ВАЖЛИВО: Поле має називатися commentText, як у твоєму DTO */}
+                                                    <p className="text-sm text-slate-200">{c.commentText}</p>
+                                                </div>
+                                            );
+                                        })
+                                ) : (
                             <div className="text-center py-8 bg-slate-900/20 rounded-2xl border border-dashed border-slate-700">
                                 <p className="text-xs text-slate-600 italic">Коментарів до цієї заяви ще не залишено</p>
                             </div>
                         )}
                     </div>
 
-                    {/* Поле додавання коментаря (Тільки для співробітників) */}
+                    {/* Поле додавання коментаря для Деканату */}
                     {((userRole as string) === 'DEANERY_STAFF' || (userRole as string) === 'ADMIN') && (
                         <div className="mt-6 flex gap-2 animate-in slide-in-from-bottom-2">
                             <input 

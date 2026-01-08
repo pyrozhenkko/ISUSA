@@ -37,7 +37,12 @@ const AuthPage: React.FC<LoginPageProps> = ({ handleLogin }) => {
             if (response.ok) {
                 const data = await response.json();
                 handleLogin(data.token, data.user); 
-                navigate('/account');
+                const userRole = data.role || data.user?.roleName;
+                if (userRole === 'ADMIN') {
+                window.location.href = '/admin'; 
+            } else {
+                navigate('/account'); 
+            }
             } else {
                 setError(response.status === 401 ? 'Невірний логін або пароль.' : 'Помилка сервера. Спробуйте пізніше.');
             }

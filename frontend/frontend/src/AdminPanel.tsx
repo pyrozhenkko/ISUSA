@@ -122,30 +122,49 @@ const DeletedUserList = () => (
 const UserCreate = () => (
     <Create title="Додати нового користувача">
         <SimpleForm>
-            <TextInput source="username" label="Логін" fullWidth />
-            <TextInput source="password" label="Пароль" type="password" fullWidth />
-            <TextInput source="email" label="Email" fullWidth />
-            <TextInput source="firstName" label="Ім'я" />
-            <TextInput source="lastName" label="Прізвище" />
-            <SelectInput source="roleName" label="Роль" choices={[
+            <Typography variant="h6" sx={{ mb: 2 }}>Основні дані</Typography>
+            <TextInput source="username" label="Логін" fullWidth required />
+            <TextInput source="password" label="Пароль" type="password" fullWidth required />
+            <TextInput source="email" label="Email" fullWidth required />
+            
+            <div style={{ display: 'flex', gap: '10px' }}>
+                <TextInput source="firstName" label="Ім'я" required />
+                <TextInput source="lastName" label="Прізвище" required />
+                <TextInput source="middleName" label="По батькові" />
+            </div>
+
+            <SelectInput source="roleName" label="Роль користувача" required choices={[
                 { id: 'STUDENT', name: 'Студент' },
                 { id: 'TEACHER', name: 'Викладач' },
-                { id: 'DEANERY', name: 'Деканат' },
-                { id: 'ADMIN', name: 'Адмін' },
+                { id: 'DEANERY_STAFF', name: 'Деканат' },
+                { id: 'ADMIN', name: 'Адміністратор' },
             ]} />
+
+            <Typography variant="h6" sx={{ mt: 3, mb: 2 }}>Додаткова інформація</Typography>
             <TextInput source="faculty" label="Факультет" />
             <TextInput source="department" label="Кафедра" />
+            
+            <TextInput source="studentId" label="Номер студентського (для студентів)" />
+            <TextInput source="groupId" label="Група (напр. КН-31)" />
+            <TextInput source="specialty" label="Спеціальність" />
+            <SelectInput source="yearOfStudy" label="Курс" choices={[
+                { id: 1, name: '1 курс' },
+                { id: 2, name: '2 курс' },
+                { id: 3, name: '3 курс' },
+                { id: 4, name: '4 курс' },
+            ]} />
         </SimpleForm>
     </Create>
 );
 
 const ApplicationList = () => (
     <List title="Всі заявки">
-        <Datagrid>
+        <Datagrid rowClick="show">
             <TextField source="applicationId" label="ID" />
-            <TextField source="type.name" label="Тип" />
-            <TextField source="status" label="Статус" />
-            <DateField source="createdAt" label="Створено" showTime />
+            <TextField source="applicationType.typeName" label="Тип" />
+            <TextField source="applicationStatus.statusName" label="Статус" />
+            <TextField source="student.userResponseDto.lastName" label="Прізвище студента" />
+            <DateField source="createdDate" label="Створено" showTime />
         </Datagrid>
     </List>
 );

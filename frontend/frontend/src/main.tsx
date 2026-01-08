@@ -107,7 +107,9 @@ const App = () => {
                     path="/login" 
                     element={
                         authState.isAuthenticated 
-                            ? <Navigate to="/account" replace /> 
+                            ? (authState.userRole === 'ADMIN' 
+                                ? <Navigate to="/admin" replace /> 
+                                : <Navigate to="/account" replace />)
                             : <AuthPage handleLogin={handleLogin} /> 
                     } 
                 />

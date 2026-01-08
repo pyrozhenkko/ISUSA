@@ -9,6 +9,7 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring", uses = UserMapper.class)
 public interface StudentMapper {
 
+    @Mapping(source = "user", target = "userResponseDto")
     // ===== Entity -> Response DTO =====
     StudentResponseDto toResponseDto(Student entity);
 

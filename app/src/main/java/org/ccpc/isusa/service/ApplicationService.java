@@ -383,7 +383,7 @@ public class ApplicationService {
         ApplicationStatus status = statusRepository.findById(dto.getStatusId())
                 .orElseThrow(() -> new EntityNotFoundException("Статус не знайдено"));
 
-        // Зберігаємо історію зміни статусу
+        // 1. Зберігаємо історію зміни статусу (як і було)
         ApplicationHistory history = new ApplicationHistory();
         history.setApplication(app);
         history.setStatus(status);
@@ -391,7 +391,22 @@ public class ApplicationService {
         history.setChangeTimestamp(LocalDateTime.now());
         historyRepository.save(history);
 
-        // Оновлюємо заявку
+        // 2. !!! ДОДАНО: Зберігаємо коментар у таблицю Comments, щоб він з'явився в чаті !!!
+        if (dto.getComment() != null && !dto.getComment().trim().isEmpty()) {
+            Comment chatComment = new Comment();
+            chatComment.setApplication(app);
+            chatComment.setUser(user); // Автор коментаря
+            chatComment.setCommentText(dto.getComment());
+            chatComment.setCreatedDate(LocalDateTime.now());
+
+            // Додаємо коментар до колекції заявки
+            if (app.getComments() == null) {
+                app.setComments(new java.util.HashSet<>());
+            }
+            app.getComments().add(chatComment);
+        }
+
+        // 3. Оновлюємо заявку
         app.setApplicationStatus(status);
         app.setProcessedByUser(user);
         app.setUpdatedDate(LocalDateTime.now());
