@@ -22,7 +22,7 @@ import ForgotPassword from './ForgotPassword.tsx';
 import { AdminPanel } from './AdminPanel.tsx';
 
 
-type UserRole = 'STUDENT' | 'LECTURER' | 'ADMIN'; 
+type UserRole = 'STUDENT' | 'DEANERY_STAFF' | 'ADMIN'; 
 
 interface AuthState {
     isAuthenticated: boolean;
