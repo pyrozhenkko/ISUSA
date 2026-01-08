@@ -1,21 +1,30 @@
 version: '3.8'
 
 services:
-  # 1. Сервіс Бази Даних (PostgreSQL)
+  # ---------------------------
+  # 1. Основна БД
+  # ---------------------------
   db:
-    image: postgres:14-alpine # Легкий образ Postgres
-    container_name: isusa_db # Назва контейнера (як у тебе вже є)
+    image: postgres:14-alpine
+    container_name: isusa_db
     environment:
-      # Налаштування для бази даних
       POSTGRES_DB: isusa_main
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5433:5432" # Прокидаємо порт
+      - "5433:5432"  # локальний доступ
     volumes:
-      - pgdata:/var/lib/postgresql/data # Зберігаємо дані
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 5
+      start_period: 10s
 
-  # 2. НОВА БД для Звітів (Аналітична)
+  # ---------------------------
+  # 2. БД для звітів
+  # ---------------------------
   db_reports:
     image: postgres:14-alpine
     container_name: isusa_db_reports
@@ -24,40 +33,59 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5434:5432" # Зовнішній порт 5434 (щоб не було конфлікту з 5433)
+      - "5434:5432"  # локальний доступ
     volumes:
       - pgdata_reports:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 5
+      start_period: 10s
 
-  # 2. Сервіс Твого Додатку (Spring Boot)
+  # ---------------------------
+  # 3. Spring Boot додаток
+  # ---------------------------
   app:
-    container_name: isusa_app
-    # Кажемо Compose зібрати образ з Dockerfile в поточній папці (.)
     build: ./app
+    container_name: isusa_app
     ports:
-      - "8081:8081" # Прокидаємо порт твого додатка (у тебе 8081)
+      - "8081:8081"
     environment:
-      # !!! НАЙВАЖЛИВІША ЧАСТИНА !!!
-      # Ми передаємо налаштування БД в Spring, але host тепер 'db'
+      # Основна БД
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/isusa_main
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
+      # Друга БД (для звітів)
+      SPRING_REPORTS_DATASOURCE_URL: jdbc:postgresql://db_reports:5432/isusa_reports
+      SPRING_REPORTS_DATASOURCE_USERNAME: postgres
+      SPRING_REPORTS_DATASOURCE_PASSWORD: postgres
+      # Інші налаштування
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       SERVER_PORT: 8081
     depends_on:
-      - db # Вказуємо, що 'app' залежить від 'db'
-      - db_reports
+      db:
+        condition: service_healthy
+      db_reports:
+        condition: service_healthy
+    restart: unless-stopped
 
-  # 3. React + TypeScript Frontend
+  # ---------------------------
+  # 4. Frontend (React)
+  # ---------------------------
   frontend:
     build: ./frontend/frontend
     container_name: isusa_frontend
     ports:
       - "5173:5173"
     working_dir: /app
-    command: [ "npm", "run", "dev" ]
+    command: ["npm", "run", "dev"]
     depends_on:
       - app
-# Створюємо "volume", щоб дані БД не зникали
+
+# ---------------------------
+# Volumes для збереження даних
+# ---------------------------
 volumes:
   pgdata:
   pgdata_reports:
