@@ -4,7 +4,8 @@ import { Lock, CheckCircle, Loader2 } from 'lucide-react';
 
 const ResetPassword = () => {
     const [searchParams] = useSearchParams();
-    const token = searchParams.get('token'); // Витягуємо токен з URL
+    const token = searchParams.get('token');
+    console.log("Отриманий токен з URL:", token);
     const navigate = useNavigate();
 
     const [newPassword, setNewPassword] = useState('');
@@ -13,28 +14,30 @@ const ResetPassword = () => {
     const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
 
     const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (newPassword !== confirmPassword) {
-            alert("Паролі не збігаються!");
-            return;
-        }
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+        alert("Паролі не збігаються!");
+        return;
+    }
 
-        setIsLoading(true);
-        try {
-            const response = await fetch('http://localhost:8081/api/auth/reset-password', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token, newPassword }),
-            });
+    setIsLoading(true);
+    try {
+        const url = new URL('http://localhost:8081/api/auth/reset-password');
+        url.searchParams.append('token', token || '');
+        url.searchParams.append('newPassword', newPassword);
 
-            if (response.ok) setStatus('success');
-            else setStatus('error');
-        } catch (err) {
-            setStatus('error');
-        } finally {
-            setIsLoading(false);
-        }
-    };
+        const response = await fetch(url.toString(), {
+            method: 'POST',
+        });
+
+        if (response.ok) setStatus('success');
+        else setStatus('error');
+    } catch (err) {
+        setStatus('error');
+    } finally {
+        setIsLoading(false);
+    }
+};
 
     return (
         <div className="min-h-screen bg-slate-950 text-slate-200 flex items-center justify-center p-4">
@@ -45,7 +48,7 @@ const ResetPassword = () => {
                         <h2 className="text-2xl font-bold text-white">Пароль змінено!</h2>
                         <p className="text-slate-400">Тепер ви можете увійти з новим паролем.</p>
                         <button 
-                            onClick={() => navigate('/auth')}
+                            onClick={() => navigate('/login')}
                             className="w-full bg-blue-600 py-3 rounded-2xl font-bold hover:bg-blue-500 transition-all"
                         >
                             До сторінки входу
