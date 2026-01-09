@@ -35,9 +35,8 @@ const EditApplicationPage: React.FC = () => {
         setMessage(null);
         setIsLoading(true);
 
-        // *** Тут має бути виклик API для збереження даних ***
 
-        await new Promise(resolve => setTimeout(resolve, 1500)); // Імітація затримки API
+        await new Promise(resolve => setTimeout(resolve, 1500)); 
 
         try {
             setIsEditing(false);
@@ -56,14 +55,12 @@ const EditApplicationPage: React.FC = () => {
         setMessage(null);
         setIsLoading(true);
 
-        // *** Тут має бути виклик API для видалення даних ***
 
         await new Promise(resolve => setTimeout(resolve, 1500));
 
         try {
-            // Успішне видалення
             setMessage({ type: 'success', text: 'Заяву успішно видалено.' });
-            setTimeout(() => navigate('/account'), 1000); // Перенаправити після видалення
+            setTimeout(() => navigate('/account'), 1000); 
         } catch (error) {
             console.error("Delete failed:", error);
             setMessage({ type: 'error', text: 'Помилка при видаленні. Спробуйте ще раз.' });

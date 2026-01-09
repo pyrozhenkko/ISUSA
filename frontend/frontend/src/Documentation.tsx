@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   BookOpen, 
-  Shield, 
-  Bell, 
+  Shield,
   LogOut, 
   User,
   Book,
@@ -18,15 +17,17 @@ import {
   Download,
   Github,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Menu,
+  X
 } from 'lucide-react';
 import Footer from './Footer';
 
 export default function Documentation() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeSection, setActiveSection] = useState('getting-started');
-  // Стан для відкритої статті
   const [activeArticle, setActiveArticle] = useState<string | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const sections = [
     {
@@ -234,7 +235,6 @@ export default function Documentation() {
     return colors[color as keyof typeof colors] || colors.blue;
   };
 
-  // Функція для перемикання стану статті
   const toggleArticle = (id: string) => {
     setActiveArticle(activeArticle === id ? null : id);
   };
@@ -245,34 +245,35 @@ export default function Documentation() {
       <header className="border-b border-slate-800 bg-slate-900 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            {/* Logo and Brand */}
             <div className="flex items-center gap-3">
               <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-                <div className="relative w-10 h-10 flex items-center justify-center">
-                  <BookOpen className="absolute inset-0 w-6 h-6 m-auto text-blue-500" strokeWidth={1.5} />
-                  <Shield className="absolute inset-0 w-10 h-10 text-emerald-500 opacity-30" strokeWidth={1} />
+                <div className="relative w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center">
+                  <BookOpen className="absolute inset-0 w-5 h-5 sm:w-6 sm:h-6 m-auto text-blue-500" strokeWidth={1.5} />
+                  <Shield className="absolute inset-0 w-8 h-8 sm:w-10 sm:h-10 text-emerald-500 opacity-30" strokeWidth={1} />
                 </div>
-                <span className="text-xl font-bold tracking-tight text-white">ISUSA</span>
+                <span className="text-lg sm:text-xl font-bold tracking-tight text-white">ISUSA</span>
               </Link>
-              <span className="text-slate-600">/</span>
-              <span className="text-sm text-slate-400">Docs</span>
+              <span className="hidden xs:inline text-slate-600">/</span>
+              <span className="hidden xs:inline text-sm text-slate-400">Docs</span>
             </div>
 
-            {/* Right Side Actions */}
-            <div className="flex items-center gap-4">
-              <Link to="/" className="text-sm text-slate-400 hover:text-white transition-colors">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <Link to="/" className="hidden md:inline text-sm text-slate-400 hover:text-white transition-colors">
                 Головна
               </Link>
-              <button className="w-8 h-8 rounded-full bg-slate-700 border border-slate-600 flex items-center justify-center hover:bg-slate-600 transition-colors">
+              <button className="hidden sm:flex w-8 h-8 rounded-full bg-slate-700 border border-slate-600 items-center justify-center hover:bg-slate-600 transition-colors">
                 <User className="w-4 h-4 text-slate-300" />
               </button>
-              <button className="relative p-2 hover:bg-slate-800 rounded-lg transition-colors">
-                <Bell className="w-5 h-5 text-slate-300" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-              </button>
-              <button className="flex items-center gap-2 px-3 py-1.5 border border-slate-700 rounded-lg hover:bg-slate-800 transition-colors">
+              <button className="flex items-center gap-2 px-2 sm:px-3 py-1.5 border border-slate-700 rounded-lg hover:bg-slate-800 transition-colors">
                 <LogOut className="w-4 h-4 text-slate-400" />
-                <span className="text-sm text-slate-300">Sign Out</span>
+                <span className="hidden sm:inline text-sm text-slate-300">Sign Out</span>
+              </button>
+              {/* Mobile Menu Toggle */}
+              <button 
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="lg:hidden p-2 text-slate-400 hover:bg-slate-800 rounded-lg"
+              >
+                {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
               </button>
             </div>
           </div>
@@ -281,129 +282,144 @@ export default function Documentation() {
 
       {/* Hero Section */}
       <section className="border-b border-slate-800 bg-gradient-to-b from-slate-900 to-slate-900/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="text-center max-w-3xl mx-auto mb-12">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600/10 border border-blue-600/20 rounded-full text-sm text-blue-400 mb-6">
-              <Book className="w-4 h-4" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16">
+          <div className="text-center max-w-3xl mx-auto mb-8 sm:mb-12">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600/10 border border-blue-600/20 rounded-full text-xs sm:text-sm text-blue-400 mb-4 sm:mb-6">
+              <Book className="w-3 h-3 sm:w-4 h-4" />
               Документація
             </div>
-            <h1 className="text-5xl mb-6 text-white tracking-tight">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl mb-4 sm:mb-6 text-white tracking-tight font-bold">
               База <span className="text-blue-500">знань</span> ISUSA
             </h1>
-            <p className="text-xl text-slate-400 mb-8">
+            <p className="text-base sm:text-lg md:text-xl text-slate-400 mb-6 sm:mb-8 px-4">
               Все, що потрібно знати для ефективної роботи з системою
             </p>
 
             {/* Search Bar */}
-            <div className="relative max-w-2xl mx-auto">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <div className="relative max-w-2xl mx-auto px-4">
+              <Search className="absolute left-8 top-1/2 -translate-y-1/2 w-4 h-4 sm:w-5 h-5 text-slate-400" />
               <input
                 type="text"
                 placeholder="Шукати в документації..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 transition-colors"
+                className="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-4 bg-slate-800 border border-slate-700 rounded-xl text-sm sm:text-base text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 transition-colors shadow-xl"
               />
             </div>
           </div>
 
           {/* Quick Links */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 px-4 sm:px-0">
             {quickLinks.map((link, index) => (
               <a
                 key={index}
                 href={link.link}
-                className="bg-slate-800 border border-slate-700 rounded-lg p-6 hover:border-slate-600 transition-colors group"
+                className="bg-slate-800 border border-slate-700 rounded-xl p-5 sm:p-6 hover:border-slate-600 transition-colors group shadow-lg"
               >
-                <div className={`inline-flex p-3 border rounded-lg mb-4 ${getColorClasses(link.color)}`}>
-                  <link.icon className="w-6 h-6" />
+                <div className={`inline-flex p-2.5 sm:p-3 border rounded-lg mb-3 sm:mb-4 ${getColorClasses(link.color)}`}>
+                  <link.icon className="w-5 h-5 sm:w-6 h-6" />
                 </div>
-                <h3 className="text-white mb-2 group-hover:text-blue-500 transition-colors">
+                <h3 className="text-white text-sm sm:text-base font-semibold mb-1.5 sm:mb-2 group-hover:text-blue-500 transition-colors">
                   {link.title}
                 </h3>
-                <p className="text-sm text-slate-400">{link.description}</p>
+                <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">{link.description}</p>
               </a>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      {/* Main Content Area */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-16">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          
+          {/* Mobile Overlay for Navigation */}
+          {isMobileMenuOpen && (
+            <div 
+              className="fixed inset-0 bg-black/60 z-40 lg:hidden"
+              onClick={() => setIsMobileMenuOpen(false)}
+            />
+          )}
+
           {/* Sidebar Navigation */}
-          <aside className="lg:col-span-1">
-            <div className="sticky top-24">
+          <aside className={`
+            fixed lg:sticky top-[4.1rem] left-0 h-[calc(100vh-4.1rem)] lg:h-auto
+            w-64 sm:w-72 lg:w-full bg-slate-900 lg:bg-transparent border-r lg:border-none border-slate-800
+            z-50 lg:z-0 lg:col-span-1 p-4 lg:p-0 transition-transform duration-300 ease-in-out
+            ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          `}>
+            <div className="lg:sticky lg:top-24">
+              <p className="text-[10px] uppercase font-bold text-slate-500 mb-4 px-4 tracking-widest lg:block hidden">Розділи</p>
               <nav className="space-y-1">
                 {sections.map((section) => (
-                  <div key={section.id}>
-                    <button
-                      onClick={() => {
-                        setActiveSection(section.id);
-                        setActiveArticle(null); // Закриваємо статті при перемиканні розділу
-                      }}
-                      className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-colors ${
-                        activeSection === section.id
-                          ? 'bg-blue-600/10 text-blue-500 border border-blue-600/20'
-                          : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                      }`}
-                    >
-                      <section.icon className="w-5 h-5" />
-                      <span className="text-sm">{section.title}</span>
-                    </button>
-                  </div>
+                  <button
+                    key={section.id}
+                    onClick={() => {
+                      setActiveSection(section.id);
+                      setActiveArticle(null);
+                      setIsMobileMenuOpen(false);
+                      window.scrollTo({ top: 400, behavior: 'smooth' });
+                    }}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                      activeSection === section.id
+                        ? 'bg-blue-600/10 text-blue-500 border border-blue-600/20 font-medium'
+                        : 'text-slate-400 hover:bg-slate-800/50 hover:text-white'
+                    }`}
+                  >
+                    <section.icon className="w-4 h-4 sm:w-5 h-5" />
+                    <span className="text-xs sm:text-sm">{section.title}</span>
+                  </button>
                 ))}
               </nav>
             </div>
           </aside>
 
           {/* Content Area */}
-          <main className="lg:col-span-3">
+          <main className="lg:col-span-3 min-w-0">
             {sections.filter(s => s.id === activeSection).map((section) => (
               <div key={section.id} className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="mb-8">
-                  <div className="flex items-center gap-3 mb-2">
-                    <section.icon className="w-8 h-8 text-blue-500" />
-                    <h2 className="text-3xl text-white">{section.title}</h2>
+                <div className="mb-6 sm:mb-8">
+                  <div className="flex items-center gap-3 mb-2 sm:mb-3">
+                    <section.icon className="w-6 h-6 sm:w-8 h-8 text-blue-500" />
+                    <h2 className="text-2xl sm:text-3xl font-bold text-white">{section.title}</h2>
                   </div>
-                  <p className="text-slate-400">
+                  <p className="text-sm sm:text-base text-slate-500">
                     {section.articles.length} статей у цьому розділі
                   </p>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-3 sm:space-y-4">
                   {section.articles.map((article) => (
                     <div 
                       key={article.id}
-                      className={`block bg-slate-800 border rounded-lg overflow-hidden transition-all duration-200 cursor-pointer ${
+                      className={`group bg-slate-800 border rounded-xl overflow-hidden transition-all duration-200 cursor-pointer ${
                         activeArticle === article.id ? 'border-blue-500/50 ring-1 ring-blue-500/20' : 'border-slate-700 hover:border-slate-600'
                       }`}
                       onClick={() => toggleArticle(article.id)}
                     >
-                      {/* Заголовок статті */}
-                      <div className="p-5 flex items-center justify-between group">
+                      <div className="p-4 sm:p-5 flex items-center justify-between">
                         <div className="flex-1">
-                          <h3 className={`mb-1 transition-colors ${activeArticle === article.id ? 'text-blue-400' : 'text-white group-hover:text-blue-500'}`}>
+                          <h3 className={`text-sm sm:text-base font-semibold mb-1 transition-colors ${activeArticle === article.id ? 'text-blue-400' : 'text-white group-hover:text-blue-500'}`}>
                             {article.title}
                           </h3>
-                          <p className="text-sm text-slate-500">
-                            Обсяг: {article.time}
-                          </p>
+                          <div className="flex items-center gap-3 text-[10px] sm:text-xs text-slate-500">
+                             <span className="flex items-center gap-1"><BookOpen size={12}/> {article.time} читання</span>
+                          </div>
                         </div>
                         <ChevronRight 
-                          className={`w-5 h-5 text-slate-600 transition-transform duration-300 ${
+                          className={`w-4 h-4 sm:w-5 h-5 text-slate-600 transition-transform duration-300 ${
                             activeArticle === article.id ? 'rotate-90 text-blue-500' : 'group-hover:text-blue-500'
                           }`} 
                         />
                       </div>
 
-                      {/* Тіло статті (Акордеон) */}
+                      {/* Article Content (Accordion) */}
                       <div 
                         className={`transition-all duration-300 ease-in-out bg-slate-800/50 ${
-                          activeArticle === article.id ? 'max-h-96 opacity-100 border-t border-slate-700/50' : 'max-h-0 opacity-0'
+                          activeArticle === article.id ? 'max-h-[500px] opacity-100 border-t border-slate-700/50' : 'max-h-0 opacity-0'
                         }`}
                       >
-                        <div className="px-5 pb-6 pt-4 text-slate-400 text-sm leading-relaxed">
+                        <div className="px-4 sm:px-6 pb-5 sm:pb-6 pt-3 sm:pt-4 text-slate-400 text-sm sm:text-base leading-relaxed">
                           {article.content}
                         </div>
                       </div>
@@ -414,26 +430,26 @@ export default function Documentation() {
             ))}
 
             {/* Help Box */}
-            <div className="mt-12 bg-gradient-to-r from-blue-600/10 to-emerald-600/10 border border-blue-600/20 rounded-lg p-8">
-              <div className="flex items-start gap-4">
-                <div className="p-3 bg-blue-600/10 border border-blue-600/20 rounded-lg">
-                  <HelpCircle className="w-6 h-6 text-blue-500" />
+            <div className="mt-8 sm:mt-12 bg-gradient-to-br from-blue-600/10 to-emerald-600/5 border border-blue-600/20 rounded-2xl p-6 sm:p-8 shadow-inner">
+              <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
+                <div className="p-3 bg-blue-600/10 border border-blue-600/20 rounded-xl hidden xs:block">
+                  <HelpCircle className="w-6 h-6 sm:w-8 h-8 text-blue-500" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-xl text-white mb-2">Не знайшли відповідь?</h3>
-                  <p className="text-slate-400 mb-4">
+                  <h3 className="text-lg sm:text-xl font-bold text-white mb-2">Не знайшли відповідь?</h3>
+                  <p className="text-sm sm:text-base text-slate-400 mb-6">
                     Наша служба підтримки готова допомогти вам у будь-який час
                   </p>
-                  <div className="flex flex-wrap gap-3">
+                  <div className="flex flex-col xs:flex-row flex-wrap gap-3">
                     <a
                       href="https://mail.google.com/mail/u/1/#inbox?compose=CllgCJfttqHwjhlrssGmJTtztPvRHxjttvklgwrCHfqFnHTxzNlfCJmKNPvcwvqCBbVwjFqMzsq"
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors border border-blue-700"
+                      className="inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-semibold rounded-xl transition-all shadow-lg shadow-blue-900/20"
                     >
                       Зв'язатися з підтримкою
                     </a>
                     <a
                       href="https://github.com/IvanOmeliash"
-                      className="inline-flex items-center gap-2 px-4 py-2 border border-slate-700 hover:bg-slate-800 text-slate-300 rounded-lg transition-colors"
+                      className="inline-flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 border border-slate-700 hover:bg-slate-800 text-slate-300 text-xs sm:text-sm font-semibold rounded-xl transition-all"
                     >
                       <Github className="w-4 h-4" />
                       GitHub Discussions
@@ -444,37 +460,37 @@ export default function Documentation() {
             </div>
 
             {/* Updates Section */}
-            <div className="mt-12">
-              <h3 className="text-2xl text-white mb-6">Останні оновлення</h3>
-              <div className="space-y-4">
-                <div className="bg-slate-800 border border-slate-700 rounded-lg p-5">
+            <div className="mt-8 sm:mt-12 mb-8">
+              <h3 className="text-xl sm:text-2xl font-bold text-white mb-6">Останні оновлення</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-4">
+                <div className="bg-slate-800 border border-slate-700 rounded-xl p-5 group hover:border-slate-500 transition-colors">
                   <div className="flex items-start gap-4">
-                    <div className="p-2 bg-emerald-600/10 border border-emerald-600/20 rounded">
+                    <div className="p-2 bg-emerald-600/10 border border-emerald-600/20 rounded-lg shrink-0">
                       <CheckCircle className="w-5 h-5 text-emerald-500" />
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h4 className="text-white">Версія 2.4.0</h4>
-                        <span className="text-xs text-slate-500">03.01.2026</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-1">
+                        <h4 className="text-sm sm:text-base font-bold text-white">Версія 2.4.0</h4>
+                        <span className="text-[10px] sm:text-xs text-slate-500 bg-slate-900 px-2 py-0.5 rounded border border-slate-700">03.01.2026</span>
                       </div>
-                      <p className="text-sm text-slate-400">
+                      <p className="text-xs sm:text-sm text-slate-400 leading-relaxed truncate sm:whitespace-normal">
                         Додано підтримку нових типів заяв та покращено швидкість роботи системи
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-slate-800 border border-slate-700 rounded-lg p-5">
+                <div className="bg-slate-800 border border-slate-700 rounded-xl p-5 group hover:border-slate-500 transition-colors">
                   <div className="flex items-start gap-4">
-                    <div className="p-2 bg-blue-600/10 border border-blue-600/20 rounded">
+                    <div className="p-2 bg-blue-600/10 border border-blue-600/20 rounded-lg shrink-0">
                       <AlertCircle className="w-5 h-5 text-blue-500" />
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h4 className="text-white">Оновлення документації</h4>
-                        <span className="text-xs text-slate-500">28.12.2025</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-1">
+                        <h4 className="text-sm sm:text-base font-bold text-white">Оновлення документації</h4>
+                        <span className="text-[10px] sm:text-xs text-slate-500 bg-slate-900 px-2 py-0.5 rounded border border-slate-700">28.12.2025</span>
                       </div>
-                      <p className="text-sm text-slate-400">
+                      <p className="text-xs sm:text-sm text-slate-400 leading-relaxed truncate sm:whitespace-normal">
                         Розширено розділ про безпеку та додано приклади інтеграції API
                       </p>
                     </div>
@@ -486,7 +502,6 @@ export default function Documentation() {
         </div>
       </div>
 
-      {/* Footer */}
       <Footer />
     </div>
   );

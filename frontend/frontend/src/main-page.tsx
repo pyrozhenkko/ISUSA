@@ -96,6 +96,9 @@ const LecturerView: React.FC<StudentPortalProps> = ({ userRole, onViewDetail }) 
     const [applications, setApplications] = useState<MyApplication[]>([]);
     const [loading, setLoading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [filterType, setFilterType] = useState('');
+const [filterFaculty, setFilterFaculty] = useState('');
+const [filterYear, setFilterYear] = useState('');
     
     const [hoveredStudentData, setHoveredStudentData] = useState<any | null>(null);
     const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -165,9 +168,17 @@ useEffect(() => {
         } catch (err) { alert("Помилка при оновленні"); }
     };
 
-    const filteredApplications = applications.filter(app => 
-        app.studentName?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredApplications = applications.filter(app => {
+    const matchesSearch = app.studentName?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesType = filterType === '' || app.type === filterType;
+    const matchesFaculty = filterFaculty === '' || (app as any).studentFullInfo?.userResponseDto?.faculty === filterFaculty;
+    const matchesYear = filterYear === '' || (app as any).studentFullInfo?.yearOfStudy?.toString() === filterYear;
+
+    return matchesSearch && matchesType && matchesFaculty && matchesYear;
+});
+
+    const allTypes = Array.from(new Set(applications.map(a => a.type)));
+    const allFaculties = Array.from(new Set(applications.map(a => (a as any).studentFullInfo?.userResponseDto?.faculty).filter(Boolean)));
 
     const getStatusStyles = (status: string) => {
         const s = status.toLowerCase();
@@ -181,19 +192,52 @@ useEffect(() => {
         <div className="space-y-6">
             {/* Панель пошуку */}
             <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl">
-                <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                    <h2 className="text-xl font-bold flex items-center gap-3">
-                        <Shield className="text-blue-500" /> Панель Деканату
-                    </h2>
-                    <div className="relative w-full md:w-96">
-                        <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4" />
-                        <input 
-                            type="text"
-                            placeholder="Пошук за ПІБ студента..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 bg-slate-900 border border-slate-700 rounded-xl text-sm focus:border-blue-500 outline-none transition-all text-white"
-                        />
+                <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl space-y-6">
+                    {/* Верхній ряд: Заголовок + Пошук */}
+                    <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                        <h2 className="text-xl font-bold flex items-center gap-3 shrink-0">
+                            <Shield className="text-blue-500" /> Панель Деканату
+                        </h2>
+                        
+                        <div className="relative w-full md:w-96">
+                            <User className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 w-4 h-4" />
+                            <input 
+                                type="text"
+                                placeholder="Пошук за ПІБ студента..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-white placeholder:text-slate-500"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Блок фільтрів: Винесений окремим рядком */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-700/50">
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Тип заяви</label>
+                            <select 
+                                value={filterType} 
+                                onChange={(e) => setFilterType(e.target.value)}
+                                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-200 outline-none focus:border-blue-500 transition-colors cursor-pointer appearance-none"
+                                style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%2364748b\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\'%3E%3C/path%3E%3C/svg%3E")', backgroundPosition: 'right 0.75rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1rem' }}
+                            >
+                                <option value="">Всі типи заяв</option>
+                                {allTypes.map(t => <option key={t} value={t} className="bg-slate-900">{t}</option>)}
+                            </select>
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] uppercase font-bold text-slate-500 ml-1">Факультет</label>
+                            <select 
+                                value={filterFaculty} 
+                                onChange={(e) => setFilterFaculty(e.target.value)}
+                                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-200 outline-none focus:border-blue-500 transition-colors cursor-pointer appearance-none"
+                                style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'none\' viewBox=\'0 0 24 24\' stroke=\'%2364748b\'%3E%3Cpath stroke-linecap=\'round\' stroke-linejoin=\'round\' stroke-width=\'2\' d=\'M19 9l-7 7-7-7\'%3E%3C/path%3E%3C/svg%3E")', backgroundPosition: 'right 0.75rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1rem' }}
+                            >
+                                <option value="">Всі факультети</option>
+                                {allFaculties.map(f => <option key={f as string} value={f as string} className="bg-slate-900">{f as string}</option>)}
+                            </select>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1085,17 +1129,25 @@ if (userRole === 'DEANERY_STAFF' || userRole === 'ADMIN') {
             </button>
 
             {/* Tabs */}
-            <div className="flex gap-4 border-b border-slate-800">
-              {[
+            <div className="flex gap-4 border-b border-slate-800 overflow-x-auto no-scrollbar">
+                {[
                 { id: 'overview', label: 'Огляд', icon: Home },
                 { id: 'drafts', label: `Чернетки (${drafts.length})`, icon: Edit3 },
                 { id: 'active', label: `Активні (${activeApps.length})`, icon: Clock },
                 { id: 'archive', label: `Архів (${archivedApps.length})`, icon: Archive }
-              ].map(t => (
-                <button key={t.id} onClick={() => setActiveTab(t.id as any)} className={`pb-4 px-2 text-sm flex items-center gap-2 transition-all border-b-2 ${activeTab === t.id ? 'border-blue-500 text-blue-500' : 'border-transparent text-slate-500 hover:text-slate-300'}`}>
-                  <t.icon size={16} /> {t.label}
+                ].map(t => (
+                <button 
+                    key={t.id} 
+                    onClick={() => setActiveTab(t.id as any)} 
+                    className={`pb-4 px-2 text-sm flex items-center gap-2 transition-all border-b-2 whitespace-nowrap flex-shrink-0 ${
+                        activeTab === t.id 
+                            ? 'border-blue-500 text-blue-500' 
+                            : 'border-transparent text-slate-500 hover:text-slate-300'
+                    }`}
+                >
+                    <t.icon size={16} /> {t.label}
                 </button>
-              ))}
+                ))}
             </div>
 
             {/* List */}

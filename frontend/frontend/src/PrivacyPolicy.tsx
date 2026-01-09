@@ -148,22 +148,20 @@ export default function PrivacyPolicy() {
       <header className="border-b border-slate-800 bg-slate-900 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            {/* Logo and Brand */}
-            <div className="flex items-center gap-3">
-                        <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-                            <div className="relative w-10 h-10 flex items-center justify-center">
-                                <BookOpen className="absolute inset-0 w-6 h-6 m-auto text-blue-500" strokeWidth={1.5} />
-                                <Shield className="absolute inset-0 w-10 h-10 text-emerald-500 opacity-30" strokeWidth={1} />
-                            </div>
-                            <span className="text-xl font-bold tracking-tight text-white">ISUSA</span>
-                        </Link>
-                        <span className="text-slate-600">/</span>
-              <span className="text-sm text-slate-400">Privacy</span>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Link to="/" className="flex items-center gap-2 sm:gap-3 hover:opacity-80 transition-opacity">
+                <div className="relative w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center">
+                  <BookOpen className="absolute inset-0 w-5 h-5 sm:w-6 sm:h-6 m-auto text-blue-500" strokeWidth={1.5} />
+                  <Shield className="absolute inset-0 w-8 h-8 sm:w-10 sm:h-10 text-emerald-500 opacity-30" strokeWidth={1} />
+                </div>
+                <span className="text-lg sm:text-xl font-bold tracking-tight text-white">ISUSA</span>
+              </Link>
+              <span className="text-slate-600">/</span>
+              <span className="text-xs sm:text-sm text-slate-400">Privacy</span>
             </div>
 
-            {/* Right Side Actions */}
-            <div className="flex items-center gap-4">
-              <a href="/" className="text-sm text-slate-400 hover:text-white transition-colors">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <a href="/" className="hidden sm:block text-sm text-slate-400 hover:text-white transition-colors">
                 Головна
               </a>
               <button className="w-8 h-8 rounded-full bg-slate-700 border border-slate-600 flex items-center justify-center hover:bg-slate-600 transition-colors">
@@ -171,11 +169,11 @@ export default function PrivacyPolicy() {
               </button>
               <button className="relative p-2 hover:bg-slate-800 rounded-lg transition-colors">
                 <Bell className="w-5 h-5 text-slate-300" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
               </button>
-              <button className="flex items-center gap-2 px-3 py-1.5 border border-slate-700 rounded-lg hover:bg-slate-800 transition-colors">
+              <button className="flex items-center gap-2 px-2 sm:px-3 py-1.5 border border-slate-700 rounded-lg hover:bg-slate-800 transition-colors">
                 <LogOut className="w-4 h-4 text-slate-400" />
-                <span className="text-sm text-slate-300">Sign Out</span>
+                <span className="hidden sm:inline text-sm text-slate-300">Sign Out</span>
               </button>
             </div>
           </div>
@@ -184,48 +182,48 @@ export default function PrivacyPolicy() {
 
       {/* Hero Section */}
       <section className="border-b border-slate-800 bg-gradient-to-b from-slate-900 to-slate-900/50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600/10 border border-emerald-600/20 rounded-full text-sm text-emerald-400 mb-6">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-20 text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600/10 border border-emerald-600/20 rounded-full text-xs sm:text-sm text-emerald-400 mb-6">
             <Shield className="w-4 h-4" />
             Політика конфіденційності
           </div>
-          <h1 className="text-5xl mb-6 text-white tracking-tight">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl mb-6 text-white tracking-tight font-bold">
             Ваша <span className="text-emerald-500">приватність</span> важлива
           </h1>
-          <p className="text-xl text-slate-400 mb-6">
+          <p className="text-base sm:text-lg md:text-xl text-slate-400 mb-6 max-w-2xl mx-auto">
             Ми серйозно ставимося до захисту ваших персональних даних та дотримуємось найвищих стандартів безпеки.
           </p>
-          <div className="flex items-center justify-center gap-2 text-sm text-slate-500">
+          <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-slate-500 font-medium">
             <span>Останнє оновлення:</span>
-            <span className="text-slate-400">03 січня 2026</span>
+            <span className="text-slate-400 bg-slate-800 px-2 py-0.5 rounded border border-slate-700">03 січня 2026</span>
           </div>
         </div>
       </section>
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16">
         {/* Principles */}
-        <section className="mb-16">
-          <h2 className="text-2xl text-white mb-8 text-center">Наші принципи</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <section className="mb-12 sm:mb-16">
+          <h2 className="text-xl sm:text-2xl text-white mb-8 text-center font-bold">Наші принципи</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {principles.map((principle, index) => (
-              <div key={index} className="bg-slate-800 border border-slate-700 rounded-lg p-6 text-center">
+              <div key={index} className="bg-slate-800 border border-slate-700 rounded-xl p-5 sm:p-6 text-center hover:border-blue-500/30 transition-colors">
                 <div className="inline-flex p-3 bg-blue-600/10 border border-blue-600/20 rounded-lg mb-4">
-                  <principle.icon className="w-6 h-6 text-blue-500" />
+                  <principle.icon className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" />
                 </div>
-                <h3 className="text-white mb-2">{principle.title}</h3>
-                <p className="text-sm text-slate-400">{principle.description}</p>
+                <h3 className="text-white text-sm sm:text-base font-semibold mb-2">{principle.title}</h3>
+                <p className="text-xs text-slate-400 leading-relaxed">{principle.description}</p>
               </div>
             ))}
           </div>
         </section>
 
         {/* Important Notice */}
-        <div className="bg-amber-600/10 border border-amber-600/20 rounded-lg p-6 mb-16">
-          <div className="flex gap-4">
-            <AlertTriangle className="w-6 h-6 text-amber-500 flex-shrink-0" />
+        <div className="bg-amber-600/10 border border-amber-600/20 rounded-2xl p-5 sm:p-6 mb-12 sm:mb-16">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <AlertTriangle className="w-6 h-6 text-amber-500 shrink-0" />
             <div>
-              <h3 className="text-white mb-2">Важливо знати</h3>
-              <p className="text-sm text-slate-300">
+              <h3 className="text-white font-bold mb-2">Важливо знати</h3>
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
                 ISUSA НЕ призначена для збору чутливої особистої інформації (ПІБ). 
                 Система створена для роботи з академічними документами в освітніх цілях. 
                 Будь ласка, не вказуйте дані медичних, фінансових або інших конфіденційних особистих документів без необхідності.
@@ -235,21 +233,21 @@ export default function PrivacyPolicy() {
         </div>
 
         {/* Main Sections */}
-        <div className="space-y-12">
+        <div className="space-y-10 sm:space-y-12">
           {sections.map((section) => (
             <section key={section.id} id={section.id}>
               <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 bg-blue-600/10 border border-blue-600/20 rounded-lg">
-                  <section.icon className="w-6 h-6 text-blue-500" />
+                <div className="p-2.5 sm:p-3 bg-blue-600/10 border border-blue-600/20 rounded-xl">
+                  <section.icon className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" />
                 </div>
-                <h2 className="text-2xl text-white">{section.title}</h2>
+                <h2 className="text-xl sm:text-2xl font-bold text-white">{section.title}</h2>
               </div>
               
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 {section.content.map((item, index) => (
-                  <div key={index} className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-                    <h3 className="text-lg text-white mb-3">{item.subtitle}</h3>
-                    <p className="text-slate-400 leading-relaxed">{item.text}</p>
+                  <div key={index} className="bg-slate-800 border border-slate-700 rounded-xl p-5 sm:p-6 shadow-sm hover:border-slate-600 transition-colors">
+                    <h3 className="text-base sm:text-lg text-white font-semibold mb-3">{item.subtitle}</h3>
+                    <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">{item.text}</p>
                   </div>
                 ))}
               </div>
@@ -258,112 +256,107 @@ export default function PrivacyPolicy() {
         </div>
 
         {/* Cookies Section */}
-        <section className="mt-12">
+        <section className="mt-10 sm:mt-12">
           <div className="flex items-center gap-3 mb-6">
-            <div className="p-3 bg-purple-600/10 border border-purple-600/20 rounded-lg">
-              <Database className="w-6 h-6 text-purple-500" />
+            <div className="p-2.5 sm:p-3 bg-purple-600/10 border border-purple-600/20 rounded-xl">
+              <Database className="w-5 h-5 sm:w-6 sm:h-6 text-purple-500" />
             </div>
-            <h2 className="text-2xl text-white">Cookies та локальне сховище</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-white">Cookies та локальне сховище</h2>
           </div>
           
-          <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-            <p className="text-slate-400 leading-relaxed mb-4">
+          <div className="bg-slate-800 border border-slate-700 rounded-xl p-5 sm:p-6">
+            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed mb-4 font-medium">
               Ми використовуємо cookies та локальне сховище браузера для:
             </p>
-            <ul className="space-y-2 text-slate-400">
-              <li className="flex items-start gap-2">
-                <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-                <span>Підтримки вашої сесії після входу в систему</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-                <span>Збереження ваших налаштувань інтерфейсу</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-                <span>Аналізу використання сервісу (анонімно)</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-                <span>Забезпечення безпеки та запобігання шахрайству</span>
-              </li>
+            <ul className="space-y-3">
+              {[
+                'Підтримки вашої сесії після входу в систему',
+                'Збереження ваших налаштувань інтерфейсу',
+                'Аналізу використання сервісу (анонімно)',
+                'Забезпечення безпеки та запобігання шахрайству'
+              ].map((text, idx) => (
+                <li key={idx} className="flex items-start gap-3 text-xs sm:text-sm text-slate-400">
+                  <CheckCircle className="w-4 h-4 sm:w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
+                  <span>{text}</span>
+                </li>
+              ))}
             </ul>
           </div>
         </section>
 
         {/* Data Retention */}
-        <section className="mt-12">
+        <section className="mt-10 sm:mt-12">
           <div className="flex items-center gap-3 mb-6">
-            <div className="p-3 bg-blue-600/10 border border-blue-600/20 rounded-lg">
-              <Database className="w-6 h-6 text-blue-500" />
+            <div className="p-2.5 sm:p-3 bg-blue-600/10 border border-blue-600/20 rounded-xl">
+              <Database className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" />
             </div>
-            <h2 className="text-2xl text-white">Термін зберігання даних</h2>
+            <h2 className="text-xl sm:text-2xl font-bold text-white">Термін зберігання даних</h2>
           </div>
           
-          <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-            <div className="space-y-4 text-slate-400">
-              <div>
-                <h4 className="text-white mb-2">Активні акаунти</h4>
-                <p>Дані зберігаються протягом усього періоду вашого навчання в університеті.</p>
-              </div>
-              <div>
-                <h4 className="text-white mb-2">Архівні документи</h4>
-                <p>Підписані заяви зберігаються відповідно до вимог університету (зазвичай 5 років після закінчення навчання).</p>
-              </div>
-              <div>
-                <h4 className="text-white mb-2">Видалені акаунти</h4>
-                <p>Після видалення акаунту персональні дані видаляються протягом 30 днів. Архівні документи можуть зберігатися анонімно згідно з законодавством.</p>
-              </div>
+          <div className="bg-slate-800 border border-slate-700 rounded-xl p-5 sm:p-6">
+            <div className="space-y-6">
+              {[
+                { title: 'Активні акаунти', text: 'Дані зберігаються протягом усього періоду вашого навчання в університеті.' },
+                { title: 'Архівні документи', text: 'Підписані заяви зберігаються відповідно до вимог університету (зазвичай 5 років після закінчення навчання).' },
+                { title: 'Видалені акаунти', text: 'Після видалення акаунту персональні дані видаляються протягом 30 днів. Архівні документи можуть зберігатися анонімно згідно з законодавством.' }
+              ].map((item, idx) => (
+                <div key={idx}>
+                  <h4 className="text-white text-sm sm:text-base font-semibold mb-1.5">{item.title}</h4>
+                  <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">{item.text}</p>
+                </div>
+              ))}
             </div>
           </div>
         </section>
 
         {/* Changes to Policy */}
-        <section className="mt-12">
-          <div className="bg-slate-800 border border-slate-700 rounded-lg p-6">
-            <h3 className="text-xl text-white mb-4">Зміни в політиці конфіденційності</h3>
-            <p className="text-slate-400 mb-4">
+        <section className="mt-10 sm:mt-12">
+          <div className="bg-slate-800 border border-slate-700 rounded-xl p-5 sm:p-6">
+            <h3 className="text-lg sm:text-xl text-white font-bold mb-4">Зміни в політиці конфіденційності</h3>
+            <p className="text-xs sm:text-sm text-slate-400 mb-4 leading-relaxed">
               Ми можемо час від часу оновлювати цю політику. Про значні зміни ми повідомимо вас через:
             </p>
-            <ul className="space-y-2 text-slate-400 mb-4">
-              <li className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                Email-повідомлення
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                Сповіщення в системі
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                Оголошення на головній сторінці
-              </li>
+            <ul className="space-y-2 text-xs sm:text-sm text-slate-400 mb-4">
+              {['Email-повідомлення', 'Сповіщення в системі', 'Оголошення на головній сторінці'].map(item => (
+                <li key={item} className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                  {item}
+                </li>
+              ))}
             </ul>
-            <p className="text-slate-400">
+            <p className="text-xs sm:text-sm text-slate-500 italic">
               Рекомендуємо періодично переглядати цю сторінку для відстеження оновлень.
             </p>
           </div>
         </section>
 
         {/* Contact */}
-        <section className="mt-12">
-          <div className="bg-gradient-to-r from-blue-600/10 to-emerald-600/10 border border-blue-600/20 rounded-lg p-8 text-center">
-            <Mail className="w-12 h-12 text-blue-500 mx-auto mb-4" />
-            <h2 className="text-2xl text-white mb-4">Маєте питання?</h2>
-            <p className="text-slate-400 mb-6 max-w-2xl mx-auto">
+        <section className="mt-10 sm:mt-12">
+          <div className="bg-gradient-to-br from-blue-600/10 to-emerald-600/10 border border-blue-600/20 rounded-2xl p-6 sm:p-8 text-center shadow-lg">
+            <Mail className="w-10 h-10 sm:w-12 sm:h-12 text-blue-500 mx-auto mb-4" />
+            <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">Маєте питання?</h2>
+            <p className="text-xs sm:text-sm text-slate-400 mb-8 max-w-lg mx-auto leading-relaxed">
               Якщо у вас є запитання щодо політики конфіденційності або ви хочете скористатися своїми правами, 
               будь ласка, зв'яжіться з нами
             </p>
-            <div className="space-y-2 text-sm text-slate-400">
-              <div>Email: <a href="mailto:privacy@university.edu" className="text-blue-500 hover:text-blue-400">asu.dept@lpnu.ua</a></div>
-              <div>Телефон: +38 (032)-258-26-47</div>
-              <div>Адреса: вул. С. Бандери 28а, 5-й н.к., кім. 801</div>
+            <div className="space-y-3 text-xs sm:text-sm text-slate-400">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2">
+                <span className="font-bold text-slate-300">Email:</span>
+                <a href="mailto:asu.dept@lpnu.ua" className="text-blue-500 hover:text-blue-400 transition-colors">asu.dept@lpnu.ua</a>
+              </div>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2">
+                <span className="font-bold text-slate-300">Телефон:</span>
+                <span>+38 (032)-258-26-47</span>
+              </div>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 max-w-sm mx-auto">
+                <span className="font-bold text-slate-300 shrink-0">Адреса:</span>
+                <span>вул. С. Бандери 28а, 5-й н.к., кім. 801</span>
+              </div>
             </div>
           </div>
         </section>
       </main>
 
-      {/* Footer */}
       <Footer />
     </div>
   );
